@@ -45,7 +45,7 @@ def send_frames(queue, sock):
         # frame = cv2.resize(frame, (1920, 1080))
         data = cv2.imencode('.jpg', queue.get())[1].tobytes()
         size = struct.pack("!I", len(data))  # Send frame size first (4 bytes)
-        print(f"Sending frame of size: {len(data)} bytes.")  # Debug print
+
         try:
             sock.sendall(size + data)
         except Exception as e:
@@ -59,7 +59,7 @@ def receive(sock, window_name):
         try:
             # Read frame size (4 bytes)
             size_data = sock.recv(4)
-            print("recieve test")
+
             if not size_data:
                 break
             size = struct.unpack("!I", size_data)[0]  # Extract frame size
@@ -79,7 +79,6 @@ def receive(sock, window_name):
                 continue
 
             cv2.imshow(window_name, img)
-            print(f"Frame received and displayed.")
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break

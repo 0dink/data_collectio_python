@@ -1,10 +1,6 @@
-import cv2
-import threading
 import socket
-import multiprocessing
 
 from video_utils import send_receive_and_save
-
 
 if __name__ == "__main__":
     # Initialize server socket
@@ -19,7 +15,7 @@ if __name__ == "__main__":
     client_socket, client_address = server_socket.accept()
     print(f"Connection established with {client_address}")
 
-    send_receive_and_save(server_socket, 30, "Server")
+    send_receive_and_save(client_socket, 30, "Server")
 
     client_socket.close()
     server_socket.close()
