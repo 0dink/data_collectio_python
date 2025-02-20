@@ -12,9 +12,13 @@ cap = cv2.VideoCapture(0)
 cap.set(3, 1920)  # Set the resolution to 1920x1080
 cap.set(4, 1080)
 
+# Get the actual frame rate from the webcam
+fps = cap.get(cv2.CAP_PROP_FPS)
+print(f"Using frame rate: {fps} FPS")
+
 # Prepare the output video writer (saving the sent video stream)
 fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Try MJPG codec
-output_writer_send = cv2.VideoWriter('client_sent_video.avi', fourcc, 20.0, (1920, 1080))
+output_writer_send = cv2.VideoWriter('client_sent_video.avi', fourcc, fps, (1920, 1080))
 
 # Create and start threads for sending and receiving
 send_thread = threading.Thread(target=send, args=(client_socket, cap, output_writer_send))
