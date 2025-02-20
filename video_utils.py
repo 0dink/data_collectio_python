@@ -1,42 +1,22 @@
 import cv2
 import struct
 import numpy as np
-import multiprocessing
 
-def send_frame(sock, frame_queue):
-    """Send video frames over a socket."""
+def send(sock, cap, output_writer_send):
+    """Send video frames over a socket and save the sent frames."""
     while True:
-        frame = frame_queue.get()  # Get a frame from the queue
-        if frame is None:  # Check for the sentinel value to stop the process
+        ret, frame = cap.read()
+        if not ret:
             break
+        # frame = cv2.resize(frame, (1920, 1080))
         data = cv2.imencode('.jpg', frame)[1].tobytes()
         size = struct.pack("!I", len(data))  # Send frame size first (4 bytes)
+
         try:
-            sock.sendall(size + data)  # Send the frame over the socket
-        except Exception as e:
-            print(f"Error while sending frame: {e}")
+            sock.sendall(size + data)
+            output_writer_send.write(frame)  # Save the sent frame to video file
+        except:
             break
-
-def save_frame(frame_queue, output_writer):
-    """Save video frames to a file."""
-    while True:
-        frame = frame_queue.get()  # Get a frame from the queue
-        if frame is None:  # Check for the sentinel value to stop the process
-            break
-        output_writer.write(frame)  # Save the frame to the file
-
-def start_video_processing(cap, sock, output_writer_send):
-    """Start the video sending and saving processes."""
-    frame_queue = multiprocessing.Queue()
-
-    # Start the send and save processes
-    send_process = multiprocessing.Process(target=send_frame, args=(sock, frame_queue))
-    save_process = multiprocessing.Process(target=save_frame, args=(frame_queue, output_writer_send))
-
-    send_process.start()
-    save_process.start()
-
-    return frame_queue, send_process, save_process
 
 def receive(sock, window_name):
     """Receive and display video frames from a socket."""
