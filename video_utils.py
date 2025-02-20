@@ -45,18 +45,21 @@ def send_frames(queue, sock):
         # frame = cv2.resize(frame, (1920, 1080))
         data = cv2.imencode('.jpg', queue.get())[1].tobytes()
         size = struct.pack("!I", len(data))  # Send frame size first (4 bytes)
-
+        print(f"Sending frame of size: {len(data)} bytes.")  # Debug print
         try:
             sock.sendall(size + data)
-        except:
+        except Exception as e:
+            print(f"Error while sending: {e}")
             break
 
 def receive(sock, window_name):
     """Receive and display video frames from a socket."""
+    print("receive thread started")
     while True:
         try:
             # Read frame size (4 bytes)
             size_data = sock.recv(4)
+            print("recieve test")
             if not size_data:
                 break
             size = struct.unpack("!I", size_data)[0]  # Extract frame size
@@ -76,10 +79,12 @@ def receive(sock, window_name):
                 continue
 
             cv2.imshow(window_name, img)
+            print(f"Frame received and displayed.")
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-        except:
+        except Exception as e:
+            print(f"Error in receiving frame: {e}")
             break
 
 def send_receive_and_save(sock, fps, window_name, width=1920, height=1080):
@@ -89,7 +94,7 @@ def send_receive_and_save(sock, fps, window_name, width=1920, height=1080):
     capture_process = multiprocessing.Process(target=capture_frames, args=(frame_queue, width, height,))
     save_process = multiprocessing.Process(target=save_frames, args=(frame_queue, fps,))
     send_process = multiprocessing.Process(target=send_frames, args=(frame_queue, sock,))
-    receive_process = multiprocessing.Process(target=receive, args=(sock, window_name))
+    receive_process = multiprocessing.Process(target=receive, args=(sock, window_name,))
 
     # Start processes
     capture_process.start()
