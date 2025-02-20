@@ -1,9 +1,9 @@
 import cv2
 import threading
 import socket
-
-from concurrent.futures import ThreadPoolExecutor
-from video_utils import send, receive
+import struct
+from multiprocessing import Process, Queue
+from video_utils import send_frame, save_frame
 
 # Initialize server socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -24,28 +24,40 @@ cap.set(4, 1080)
 fps = cap.get(cv2.CAP_PROP_FPS)
 print(f"Using frame rate: {fps} FPS")
 
-# Prepare the output video writer (saving the sent video stream)
-fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Try MJPG codec
+# Prepare the output video writer for saving webcam feed
+fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # MJPG codec
 output_writer_send = cv2.VideoWriter('server_sent_video.avi', fourcc, fps, (1920, 1080))
 
-# Create and start threads for sending and receiving
-# send_thread = threading.Thread(target=send, args=(client_socket, cap, output_writer_send))
-# receive_thread = threading.Thread(target=receive, args=(client_socket, "Server"))
+# Create a queue to share frames between the save and send processes
+frame_queue = Queue()
 
-# send_thread.start()
-# receive_thread.start()
+# Start the send and save processes
+send_process = Process(target=send_frame, args=(client_socket, frame_queue))
+save_process = Process(target=save_frame, args=(frame_queue, output_writer_send))
 
-# send_thread.join()
-# receive_thread.join()
+send_process.start()
+save_process.start()
 
-executor = ThreadPoolExecutor(max_workers=2)
+# Capture and pass frames to both processes
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+    
+    frame = cv2.resize(frame, (1920, 1080))  # Resize to 640x480 for sending
+    frame_queue.put(frame)  # Put the frame in the queue to be processed by the send and save processes
 
-# Start parallel processing: send frames and save frames
-executor.submit(send, client_socket, cap, output_writer_send)
-executor.submit(receive, client_socket, "Server")
+    # Check for quitting condition (e.g., pressing 'q')
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
-# Wait for threads to finish
-executor.shutdown(wait=True)
+# Stop the processes by sending a sentinel value (None)
+frame_queue.put(None)
+frame_queue.put(None)
+
+# Wait for the processes to finish
+send_process.join()
+save_process.join()
 
 # Release resources
 cap.release()
