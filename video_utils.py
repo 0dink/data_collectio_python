@@ -8,7 +8,7 @@ def send(sock, cap, output_writer_send):
         ret, frame = cap.read()
         if not ret:
             break
-        frame = cv2.resize(frame, (1920, 1080))  # Set resolution to 1920x1080
+        # frame = cv2.resize(frame, (1920, 1080 ))
         data = cv2.imencode('.jpg', frame)[1].tobytes()
         size = struct.pack("!I", len(data))  # Send frame size first (4 bytes)
 
