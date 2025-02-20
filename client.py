@@ -1,6 +1,7 @@
 import cv2
 import threading
 import socket
+import multiprocessing
 
 from video_utils import send, receive, save_to_video 
 
@@ -23,16 +24,18 @@ output_writer_send = cv2.VideoWriter('client_sent_video.avi', fourcc, fps, (1920
 
 # Create and start threads for sending and receiving
 send_thread = threading.Thread(target=send, args=(client_socket, cap))
-save_thread = threading.Thread(target=save_to_video, args=(output_writer_send, cap))
 receive_thread = threading.Thread(target=receive, args=(client_socket, "Client"))
 
+save_process = multiprocessing.Process(target=save_to_video, args=(output_writer_send, cap))
+
 send_thread.start()
-save_thread.start()
 receive_thread.start()
+save_process.start()
+
 
 send_thread.join()
-save_thread.join()
 receive_thread.join()
+save_process.join()
 
 # Release resources
 cap.release()
