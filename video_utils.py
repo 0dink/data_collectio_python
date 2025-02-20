@@ -18,8 +18,8 @@ def send(sock, cap, output_writer_send):
         except:
             break
 
-def receive(sock, window_name, output_writer_receive):
-    """Receive and display video frames from a socket and save the received frames."""
+def receive(sock, window_name):
+    """Receive and display video frames from a socket."""
     while True:
         try:
             # Read frame size (4 bytes)
@@ -43,7 +43,6 @@ def receive(sock, window_name, output_writer_receive):
                 continue
 
             cv2.imshow(window_name, img)
-            output_writer_receive.write(img)  # Save the received frame to video file
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break

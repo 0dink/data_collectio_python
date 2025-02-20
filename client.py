@@ -14,14 +14,11 @@ cap.set(4, 1080)
 
 # Prepare the output video writer (saving the sent video stream)
 fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Try MJPG codec
-output_writer_send = cv2.VideoWriter('client_sent_video.avi', fourcc, 30.0, (1920, 1080))
-
-# Prepare the output video writer (saving the received video stream)
-output_writer_receive = cv2.VideoWriter('client_received_video.avi', fourcc, 30.0, (1920, 1080))
+output_writer_send = cv2.VideoWriter('client_sent_video.avi', fourcc, 20.0, (1920, 1080))
 
 # Create and start threads for sending and receiving
 send_thread = threading.Thread(target=send, args=(client_socket, cap, output_writer_send))
-receive_thread = threading.Thread(target=receive, args=(client_socket, "Client", output_writer_receive))
+receive_thread = threading.Thread(target=receive, args=(client_socket, "Client"))
 
 send_thread.start()
 receive_thread.start()
@@ -32,6 +29,5 @@ receive_thread.join()
 # Release resources
 cap.release()
 output_writer_send.release()
-output_writer_receive.release()
 cv2.destroyAllWindows()
 client_socket.close()
