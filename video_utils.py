@@ -1,9 +1,27 @@
 import cv2
 import struct
 import numpy as np
+import time
+import threading
 
-def send(sock, cap, output_writer_send):
-    """Send video frames over a socket and save the sent frames."""
+# def send(sock, cap, output_writer_send):
+#     """Send video frames over a socket and save the sent frames."""
+#     while True:
+#         ret, frame = cap.read()
+#         if not ret:
+#             break
+#         # frame = cv2.resize(frame, (1920, 1080))
+#         data = cv2.imencode('.jpg', frame)[1].tobytes()
+#         size = struct.pack("!I", len(data))  # Send frame size first (4 bytes)
+
+#         try:
+#             sock.sendall(size + data)
+#             output_writer_send.write(frame)  # Save the sent frame to video file
+#         except:
+#             break
+
+def send(sock, cap):
+    """Send video frames over a socket."""
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -14,9 +32,16 @@ def send(sock, cap, output_writer_send):
 
         try:
             sock.sendall(size + data)
-            output_writer_send.write(frame)  # Save the sent frame to video file
         except:
             break
+
+def save_to_video(output_writer_send, cap):
+    """Save frames to a video file."""
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        output_writer_send.write(frame) 
 
 def receive(sock, window_name):
     """Receive and display video frames from a socket."""

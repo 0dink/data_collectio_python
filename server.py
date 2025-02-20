@@ -2,8 +2,7 @@ import cv2
 import threading
 import socket
 
-from concurrent.futures import ThreadPoolExecutor
-from video_utils import send, receive
+from video_utils import send, receive, save_to_video
 
 # Initialize server socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -29,13 +28,17 @@ fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Try MJPG codec
 output_writer_send = cv2.VideoWriter('server_sent_video.avi', fourcc, fps, (1920, 1080))
 
 # Create and start threads for sending and receiving
-send_thread = threading.Thread(target=send, args=(client_socket, cap, output_writer_send))
+send_thread = threading.Thread(target=send, args=(client_socket, cap))
+save_thread = threading.Thread(target=save_to_video, args=(output_writer_send, cap))
 receive_thread = threading.Thread(target=receive, args=(client_socket, "Server"))
 
+
 send_thread.start()
+save_thread.start()
 receive_thread.start()
 
 send_thread.join()
+save_thread.join()
 receive_thread.join()
 
 # Release resources
