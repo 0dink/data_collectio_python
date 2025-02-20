@@ -1,8 +1,8 @@
 import cv2
 import struct
 import numpy as np
-import time
-import threading
+import multiprocessing
+
 
 # def send(sock, cap, output_writer_send):
 #     """Send video frames over a socket and save the sent frames."""
@@ -20,33 +20,36 @@ import threading
 #         except:
 #             break
 
-def send(sock, cap):
-    """Send video frames over a socket."""
+def capture_frames(queue, width, height):
+    cap = cv2.VideoCapture(0)
+    cap.set(3, width)
+    cap.set(4, height)
+
     while True:
         ret, frame = cap.read()
-        if not ret:
+        if ret:
+            queue.put(frame)  # Put the frame in the queue
+        else:
             break
+    cap.release()
+
+def save_frames(queue, fps):
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Try MJPG codec
+    video_writer = cv2.VideoWriter("./output.avi", fourcc, fps, (1920, 1080))
+    
+    while True:
+        video_writer.write(queue.get())
+
+def send_frames(queue, sock):
+    while True:
         # frame = cv2.resize(frame, (1920, 1080))
-        data = cv2.imencode('.jpg', frame)[1].tobytes()
+        data = cv2.imencode('.jpg', queue.get())[1].tobytes()
         size = struct.pack("!I", len(data))  # Send frame size first (4 bytes)
 
         try:
             sock.sendall(size + data)
         except:
             break
-
-def save_to_video(output_file, fps, cap):
-    """Save frames to a video file."""
-    fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Try MJPG codec
-    output_writer_send = cv2.VideoWriter(output_file, fourcc, fps, (1920, 1080))
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-        output_writer_send.write(frame)  # Save the sent frame to video file
-    output_writer_send.release()
-
 
 def receive(sock, window_name):
     """Receive and display video frames from a socket."""
@@ -78,3 +81,25 @@ def receive(sock, window_name):
                 break
         except:
             break
+
+def send_receive_and_save(sock, fps, window_name, width=1920, height=1080):
+    frame_queue = multiprocessing.Queue()
+
+    # Create processes
+    capture_process = multiprocessing.Process(target=capture_frames, args=(frame_queue, width, height,))
+    save_process = multiprocessing.Process(target=save_frames, args=(frame_queue, fps,))
+    send_process = multiprocessing.Process(target=send_frames, args=(frame_queue, sock,))
+    receive_process = multiprocessing.Process(target=receive, args=(sock, window_name))
+
+    # Start processes
+    capture_process.start()
+    save_process.start()
+    send_process.start()
+    receive_process.start()
+    
+    # Optionally, wait for processes to finish
+    capture_process.join()
+    save_process.join()
+    send_process.join()
+    receive_process.join()
+
