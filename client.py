@@ -18,7 +18,7 @@ print(f"Using frame rate: {fps} FPS")
 
 # Prepare the output video writer (saving the sent video stream)
 fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Try MJPG codec
-output_writer_send = cv2.VideoWriter('client_sent_video.avi', fourcc, fps, (1920, 1080))
+output_writer_send = cv2.VideoWriter('client_sent_video.avi', fourcc, fps, (640, 480))
 
 # Create and start threads for sending and receiving
 send_thread = threading.Thread(target=send, args=(client_socket, cap, output_writer_send))
