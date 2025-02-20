@@ -35,13 +35,18 @@ def send(sock, cap):
         except:
             break
 
-def save_to_video(output_writer_send, cap):
+def save_to_video(output_file, fps, cap):
     """Save frames to a video file."""
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Try MJPG codec
+    output_writer_send = cv2.VideoWriter(output_file, fourcc, fps, (1920, 1080))
+
     while True:
         ret, frame = cap.read()
         if not ret:
             break
-        output_writer_send.write(frame) 
+        output_writer_send.write(frame)  # Save the sent frame to video file
+    output_writer_send.release()
+
 
 def receive(sock, window_name):
     """Receive and display video frames from a socket."""

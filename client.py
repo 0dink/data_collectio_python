@@ -18,15 +18,11 @@ cap.set(4, 1080)
 fps = cap.get(cv2.CAP_PROP_FPS)
 print(f"Using frame rate: {fps} FPS")
 
-# Prepare the output video writer (saving the sent video stream)
-fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Try MJPG codec
-output_writer_send = cv2.VideoWriter('client_sent_video.avi', fourcc, fps, (1920, 1080))
-
 # Create and start threads for sending and receiving
 send_thread = threading.Thread(target=send, args=(client_socket, cap))
 receive_thread = threading.Thread(target=receive, args=(client_socket, "Client"))
 
-save_process = multiprocessing.Process(target=save_to_video, args=(output_writer_send, cap))
+save_process = multiprocessing.Process(target=save_to_video, args=("./output.avi", fps, cap))
 
 send_thread.start()
 receive_thread.start()
@@ -39,6 +35,5 @@ save_process.join()
 
 # Release resources
 cap.release()
-output_writer_send.release()
 cv2.destroyAllWindows()
 client_socket.close()
