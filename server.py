@@ -20,7 +20,5 @@ def main():
     client_socket.close()
     server_socket.close()
 
-
-
 if __name__ == "__main__":
     main()

@@ -4,9 +4,13 @@ import numpy as np
 import multiprocessing
 
 def capture_frames(queue, width, height):
-    cap = cv2.VideoCapture(0)
-    cap.set(3, width)
-    cap.set(4, height)
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+
+    if cap.get(cv2.CAP_PROP_FRAME_WIDTH) != width or cap.get(cv2.CAP_PROP_FRAME_HEIGHT) != height:
+        cap.release()
+        raise RuntimeError(f"Error: Unable to set resolution to {width}x{height}, current resolution is {cap.get(cv2.CAP_PROP_FRAME_WIDTH)}x{cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}")
 
     while True:
         ret, frame = cap.read()
@@ -17,11 +21,12 @@ def capture_frames(queue, width, height):
     cap.release()
 
 def save_frames(queue, fps):
-    fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Try MJPG codec
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Try MJPG codec
     video_writer = cv2.VideoWriter("./outputs/output.avi", fourcc, fps, (1920, 1080))
-    
+
     while True:
-        video_writer.write(queue.get())
+        frame = queue.get()
+        video_writer.write(frame)
 
 def send_frames(queue, sock):
     while True:
