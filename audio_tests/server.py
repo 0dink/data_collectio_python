@@ -23,11 +23,10 @@ def main():
     audio = pyaudio.PyAudio()
     stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, output=True)
 
-    conn, addr = client_socket.accept()
-    with conn:
-        print('Connected by', addr)
+    with client_socket:
+        print('Connected by', client_address)
         while True:
-            data = conn.recv(CHUNK * 2)
+            data = client_socket.recv(CHUNK * 2)
             if not data:
                 break
             stream.write(data)

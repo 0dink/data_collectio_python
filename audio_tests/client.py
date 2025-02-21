@@ -9,7 +9,7 @@ CHUNK = 1024
 
 def read_ip():
     try:
-        return open("./inputs/server_ip.txt", "r").readline()
+        return open("../inputs/server_ip.txt", "r").readline()
     except Exception as e:
         print("getting IP: {e}")
         exit(1)
