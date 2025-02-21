@@ -5,7 +5,6 @@ import multiprocessing
 import keyboard
 import pyaudio
 import wave
-import time
 
 # Audio Setting 
 AUDIO_FORMAT = pyaudio.paInt16
@@ -71,6 +70,8 @@ def receive_audio_video(sock, window_name, stop_event):
     
     audio = pyaudio.PyAudio()
     stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
+    
+    audio_frames = []
 
     while not stop_event.is_set():
         try:
@@ -105,12 +106,29 @@ def receive_audio_video(sock, window_name, stop_event):
                 cv2.imshow(window_name, img)
 
             stream.write(audio_data)
-            
+            audio_frames.append(audio_data)
+
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-        
+
         except Exception as e:
             print(f"Error receiving: {e}")
+    
+    if audio_frames:
+        try: 
+            with wave.open("./outputs/received_audio.wav", "wb") as wf:
+                wf.setnchannels(CHANNELS)
+                wf.setsampwidth(audio.get_sample_size(AUDIO_FORMAT))
+                wf.setframerate(RATE)
+                wf.writeframes(b"".join(audio_frames))
+            
+            stream.stop_stream()
+            stream.close()
+            audio.terminate()
+        except Exception as e:
+            print(f"Error when saving audio: {e}")
+    else:
+        print("No audio data received, skipping file save.")
 
 def send_receive_and_save(sock, fps, window_name, width=1920, height=1080):
     audio_queue = multiprocessing.Queue()
@@ -137,14 +155,10 @@ def send_receive_and_save(sock, fps, window_name, width=1920, height=1080):
             print("Stopping...")
             stop_event.set()
             break
-    # time.sleep(0.1)  # Prevent high CPU usage
-    capture_process.terminate()
-    save_process.terminate()
-    send_process.terminate()
-    receive_process.terminate()
     
     # Optionally, wait for processes to finish
     capture_process.join()
     save_process.join()
     send_process.join()
     receive_process.join()
+    print("here")
