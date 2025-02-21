@@ -15,7 +15,7 @@ def main():
     client_socket, client_address = server_socket.accept()
     print(f"Connection established with {client_address}")
 
-    send_receive_and_save(client_socket, 30, "Server")
+    send_receive_and_save(client_socket, 20, "Server")
 
     client_socket.close()
     server_socket.close()

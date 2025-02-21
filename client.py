@@ -17,7 +17,7 @@ def main():
     except Exception as e:
         print(f"Connection failed: {e}")
         exit(1)
-    send_receive_and_save(client_socket, 30, "Client")
+    send_receive_and_save(client_socket, 20, "Client")
 
     client_socket.close()
 
