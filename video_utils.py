@@ -18,7 +18,7 @@ def capture_frames(queue, width, height):
 
 def save_frames(queue, fps):
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Try MJPG codec
-    video_writer = cv2.VideoWriter("./output/output.avi", fourcc, fps, (1920, 1080))
+    video_writer = cv2.VideoWriter("./outputs/output.avi", fourcc, fps, (1920, 1080))
     
     while True:
         video_writer.write(queue.get())
