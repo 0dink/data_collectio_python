@@ -27,6 +27,7 @@ def main():
         print('Connected by', client_address)
         while True:
             data = client_socket.recv(CHUNK * 2)
+            print(len(data))
             if not data:
                 break
             stream.write(data)

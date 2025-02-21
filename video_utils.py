@@ -67,13 +67,7 @@ def send_audio_video(audio_queue, video_queue, sock, stop_event):
             video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 30])[1].tobytes()
 
             audio_data = audio_queue.get()
-            
-            # Ensure audio packet size is always CHUNK * 2 (for 16-bit audio)
-            if len(audio_data) < CHUNK * 2:
-                audio_data += b'\x00' * ((CHUNK * 2) - len(audio_data))  # Pad if too short
-            elif len(audio_data) > CHUNK * 2:
-                audio_data = audio_data[:CHUNK * 2]  # Trim if too long
-            
+                        
             audio_frames.append(audio_data)
 
             # Pack audio & video sizes (each 4 bytes) + data
@@ -118,7 +112,7 @@ def receive_audio_video(sock, window_name, stop_event):
                 break
             
             video_size, audio_size = struct.unpack("!II", sizes_data)
-            
+ 
             # Receive video data
             video_data = b""
             while len(video_data) < video_size:
@@ -128,12 +122,13 @@ def receive_audio_video(sock, window_name, stop_event):
                 video_data += packet
             
             # Receive audio data
-            audio_data = bytearray()
-            while len(audio_data) < CHUNK * 2:  # Enforce fixed size
-                packet = sock.recv((CHUNK * 2) - len(audio_data))
+            audio_data = b""
+            while len(audio_data) < audio_size:
+                packet = sock.recv(audio_size - len(audio_data))
                 if not packet:
                     break
-                audio_data.extend(packet)
+                audio_data += packet
+            # print(len(audio_data))
 
             # Decode and display the frame
             nparr = np.frombuffer(video_data, np.uint8)
@@ -141,8 +136,8 @@ def receive_audio_video(sock, window_name, stop_event):
             if img is not None:
                 cv2.imshow(window_name, img)
 
-            stream.write(bytes(audio_data))
-            audio_frames.append(bytes(audio_data))
+            stream.write(audio_data)
+            audio_frames.append(audio_data)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
