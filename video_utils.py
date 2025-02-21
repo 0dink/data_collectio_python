@@ -2,10 +2,21 @@ import cv2
 import struct
 import numpy as np
 import multiprocessing
-import time
 import keyboard
+import pyaudio
+import wave
 
-def capture_frames(queue, width, height, stop_event):
+# Audio Setting 
+AUDIO_FORMAT = pyaudio.paInt16
+CHANNELS = 1
+RATE = 44100
+CHUNK = 1024
+
+def capture_audio_video(audio_queue, video_queue, width, height, stop_event):
+    
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+    
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
@@ -17,10 +28,17 @@ def capture_frames(queue, width, height, stop_event):
     while not stop_event.is_set():
         ret, frame = cap.read()
         if ret:
-            queue.put(frame)  # Put the frame in the queue
+            video_queue.put(frame)  # Put the frame in the queue
         else:
             break
+        
+        audio_data = stream.read(CHUNK, exception_on_overflow=False)
+        audio_queue.put(audio_data)
+
     cap.release()
+    stream.stop_stream()
+    stream.close()
+    audio.terminate()
 
 def save_frames(queue, fps, stop_event):
     fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Try MJPG codec
@@ -75,12 +93,30 @@ def receive(sock, window_name, stop_event):
             print(f"Error in receiving frame: {e}")
             break
 
+def save_audio_from_queue(audio_queue, filename='./output/output_audio.wav'):
+    audio_data = []
+    
+    # Collect all audio data from the queue
+    while not audio_queue.empty():
+        audio_data.append(audio_queue.get())
+
+    # Combine all audio chunks into one byte string
+    audio_data = b''.join(audio_data)
+    
+    # Save the audio data as a WAV file
+    with wave.open(filename, 'wb') as wf:
+        wf.setnchannels(CHANNELS)
+        wf.setsampwidth(pyaudio.PyAudio().get_sample_size(AUDIO_FORMAT))
+        wf.setframerate(RATE)
+        wf.writeframes(audio_data)
+
 def send_receive_and_save(sock, fps, window_name, width=1920, height=1080):
+    audio_queue = multiprocessing.Queue()
     frame_queue = multiprocessing.Queue()
     stop_event = multiprocessing.Event()
 
     # Create processes
-    capture_process = multiprocessing.Process(target=capture_frames, args=(frame_queue, width, height, stop_event,))
+    capture_process = multiprocessing.Process(target=capture_audio_video, args=(audio_queue, frame_queue, width, height, stop_event,))
     save_process = multiprocessing.Process(target=save_frames, args=(frame_queue, fps, stop_event,))
     send_process = multiprocessing.Process(target=send_frames, args=(frame_queue, sock, stop_event,))
     receive_process = multiprocessing.Process(target=receive, args=(sock, window_name, stop_event,))
@@ -100,7 +136,7 @@ def send_receive_and_save(sock, fps, window_name, width=1920, height=1080):
             stop_event.set()
             break
     # time.sleep(0.1)  # Prevent high CPU usage
-
+    save_audio_from_queue(audio_queue)
     capture_process.terminate()
     save_process.terminate()
     send_process.terminate()
