@@ -1,27 +1,34 @@
 import socket
 import pyaudio
 
-# Client setup
-HOST = '127.0.0.1'  # The server's hostname or IP address
-PORT = 65432        # The port used by the server
 
-# PyAudio setup
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
 
-audio = pyaudio.PyAudio()
-stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+def read_ip():
+    try:
+        return open("./inputs/server_ip.txt", "r").readline()
+    except Exception as e:
+        print("getting IP: {e}")
+        exit(1)
 
-# Socket setup
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
-    print(f"Connected to {HOST}:{PORT}")
+def main():
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create client socket
+    try:
+        client_socket.connect((read_ip(), 8080))  # Replace 'server_ip_here' with actual server IP
+        print("Connected to the server")
+    except Exception as e:
+        print(f"Connection failed: {e}")
+        exit(1)
+
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+
     while True:
         data = stream.read(CHUNK)
-        s.sendall(data)
+        client_socket.sendall(data)
 
-stream.stop_stream()
-stream.close()
-audio.terminate()
+if __name__ == "__main__":
+    main()

@@ -1,25 +1,29 @@
 import socket
 import pyaudio
 
-# Server setup
-HOST = '127.0.0.1'  # Listen on all interfaces
-PORT = 65432        # Port to listen on (non-privileged ports are > 1023)
-
 # PyAudio setup
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
 
-audio = pyaudio.PyAudio()
-stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, output=True)
+def main():
+    # Initialize server socket
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-# Socket setup
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.bind((HOST, PORT))
-    s.listen()
-    print(f"Server listening on {HOST}:{PORT}")
-    conn, addr = s.accept()
+    server_socket.bind(('0.0.0.0', 8080))
+    server_socket.listen(10)
+    print("Server listening on port 8080...")
+
+    # Accept a client connection
+    client_socket, client_address = server_socket.accept()
+    print(f"Connection established with {client_address}")
+
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, output=True)
+
+    conn, addr = client_socket.accept()
     with conn:
         print('Connected by', addr)
         while True:
@@ -28,6 +32,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 break
             stream.write(data)
 
-stream.stop_stream()
-stream.close()
-audio.terminate()
+    client_socket.close()
+    server_socket.close()
+
+if __name__ == "__main__":
+    main()
+
