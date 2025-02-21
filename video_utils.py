@@ -12,11 +12,8 @@ CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
 
-def capture_audio_video(audio_queue, video_queue, width, height, stop_event):
-    try: 
-        audio = pyaudio.PyAudio()
-        stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
-        
+def capture_video(video_queue, width, height, stop_event):
+    try:  
         cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
@@ -32,13 +29,23 @@ def capture_audio_video(audio_queue, video_queue, width, height, stop_event):
             else:
                 break
             
-            audio_data = stream.read(CHUNK, exception_on_overflow=True)
-            audio_queue.put(audio_data)
-    
     except Exception as e:
         print(f"error with audio stream: {e}")
 
     cap.release()
+
+def capture_audio(audio_queue, stop_event):
+    try:
+        audio = pyaudio.PyAudio()
+        stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+
+        while not stop_event.is_set():
+            audio_data = stream.read(CHUNK, exception_on_overflow=True)
+            audio_queue.put(audio_data)
+
+    except Exception as e:
+        print(f"error with audio stream: {e}")
+
     stream.stop_stream()
     stream.close()
     audio.terminate()
@@ -134,8 +141,8 @@ def receive_audio_video(sock, window_name, stop_event):
             if img is not None:
                 cv2.imshow(window_name, img)
 
-            stream.write(audio_data)
-            audio_frames.append(audio_data)
+            stream.write(bytes(audio_data))
+            audio_frames.append(bytes(audio_data))
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -165,13 +172,15 @@ def send_receive_and_save(sock, fps, window_name, width=1920, height=1080):
     stop_event = multiprocessing.Event()
 
     # Create processes
-    capture_process = multiprocessing.Process(target=capture_audio_video, args=(audio_queue, video_queue, width, height, stop_event,))
+    capture_video_process = multiprocessing.Process(target=capture_video, args=(video_queue, width, height, stop_event,))
+    capture_audio_process = multiprocessing.Process(target=capture_audio, args=(audio_queue, stop_event,))
     save_process = multiprocessing.Process(target=save_frames, args=(video_queue, fps, stop_event,))
     send_process = multiprocessing.Process(target=send_audio_video, args=(audio_queue, video_queue, sock, stop_event,))
     receive_process = multiprocessing.Process(target=receive_audio_video, args=(sock, window_name, stop_event,))
 
     # Start processes
-    capture_process.start()
+    capture_video_process.start()
+    capture_audio_process.start()
     save_process.start()
     send_process.start()
     receive_process.start()
@@ -186,7 +195,8 @@ def send_receive_and_save(sock, fps, window_name, width=1920, height=1080):
             break
     
     # Optionally, wait for processes to finish
-    capture_process.join()
+    capture_video_process.join()
+    capture_audio_process.join()
     save_process.join()
     send_process.join()
     receive_process.join()
