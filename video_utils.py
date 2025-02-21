@@ -60,6 +60,13 @@ def send_audio_video(audio_queue, video_queue, sock, stop_event):
             video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 30])[1].tobytes()
 
             audio_data = audio_queue.get()
+            
+            # Ensure audio packet size is always CHUNK * 2 (for 16-bit audio)
+            if len(audio_data) < CHUNK * 2:
+                audio_data += b'\x00' * ((CHUNK * 2) - len(audio_data))  # Pad if too short
+            elif len(audio_data) > CHUNK * 2:
+                audio_data = audio_data[:CHUNK * 2]  # Trim if too long
+            
             audio_frames.append(audio_data)
 
             # Pack audio & video sizes (each 4 bytes) + data
@@ -69,7 +76,7 @@ def send_audio_video(audio_queue, video_queue, sock, stop_event):
         except Exception as e:
             print(f"Error while sending {e}")
     
-    if audio_frames:
+    if audio_frames: # saves audio that is sent
         try: 
             audio = pyaudio.PyAudio()
             stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
@@ -114,12 +121,12 @@ def receive_audio_video(sock, window_name, stop_event):
                 video_data += packet
             
             # Receive audio data
-            audio_data = b""
-            while len(audio_data) < audio_size:
-                packet = sock.recv(audio_size - len(audio_data))
+            audio_data = bytearray()
+            while len(audio_data) < CHUNK * 2:  # Enforce fixed size
+                packet = sock.recv((CHUNK * 2) - len(audio_data))
                 if not packet:
                     break
-                audio_data += packet
+                audio_data.extend(packet)
 
             # Decode and display the frame
             nparr = np.frombuffer(video_data, np.uint8)
