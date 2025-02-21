@@ -3,23 +3,6 @@ import struct
 import numpy as np
 import multiprocessing
 
-
-# def send(sock, cap, output_writer_send):
-#     """Send video frames over a socket and save the sent frames."""
-#     while True:
-#         ret, frame = cap.read()
-#         if not ret:
-#             break
-#         # frame = cv2.resize(frame, (1920, 1080))
-#         data = cv2.imencode('.jpg', frame)[1].tobytes()
-#         size = struct.pack("!I", len(data))  # Send frame size first (4 bytes)
-
-#         try:
-#             sock.sendall(size + data)
-#             output_writer_send.write(frame)  # Save the sent frame to video file
-#         except:
-#             break
-
 def capture_frames(queue, width, height):
     cap = cv2.VideoCapture(0)
     cap.set(3, width)
@@ -35,7 +18,7 @@ def capture_frames(queue, width, height):
 
 def save_frames(queue, fps):
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # Try MJPG codec
-    video_writer = cv2.VideoWriter("./output.avi", fourcc, fps, (1920, 1080))
+    video_writer = cv2.VideoWriter("./output/output.avi", fourcc, fps, (1920, 1080))
     
     while True:
         video_writer.write(queue.get())
@@ -54,7 +37,6 @@ def send_frames(queue, sock):
 
 def receive(sock, window_name):
     """Receive and display video frames from a socket."""
-    print("receive thread started")
     while True:
         try:
             # Read frame size (4 bytes)

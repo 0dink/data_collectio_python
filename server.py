@@ -2,7 +2,7 @@ import socket
 
 from video_utils import send_receive_and_save
 
-if __name__ == "__main__":
+def main():
     # Initialize server socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -19,3 +19,8 @@ if __name__ == "__main__":
 
     client_socket.close()
     server_socket.close()
+
+
+
+if __name__ == "__main__":
+    main()
