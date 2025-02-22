@@ -17,9 +17,11 @@ def receive_audio(socket, address):
     with socket:
         print('Connected by', address)
         while True:
-            size_data = socket.recv(4)
-            number_size = struct.unpack("!I", size_data)[0]  
-            audio_data = socket.recv(2048)
+            sizes_data = socket.recv(8)
+            if not sizes_data:
+                break
+
+            number_size, audio_size = struct.unpack("!II", sizes_data)
 
             number_data = b""
             while len(number_data) < number_size:
@@ -27,6 +29,14 @@ def receive_audio(socket, address):
                 if not packet:
                     break
                 number_data += packet
+            
+            # Receive audio data
+            audio_data = b""
+            while len(audio_data) < audio_size:
+                packet = socket.recv(audio_size - len(audio_data))
+                if not packet:
+                    break
+                audio_data += packet
 
             print(len(number_data))
             stream.write(audio_data)

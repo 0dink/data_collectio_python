@@ -35,10 +35,10 @@ def audio_record(audio_queue):
 def send_audio_number(number_queue, audio_queue, socket):    
     while True:
         audio_data = audio_queue.get()
-        number_data = bytes(number_queue.get())
-        packet = struct.pack("!T", len(number_data)) + audio_data + number_data
+        number_data = number_queue.get()
+        packet = struct.pack("!II", len(number_data), len(audio_data)) + bytes(number_data) + audio_data
         socket.sendall(packet)
-        
+
 def main():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create client socket
     try:
