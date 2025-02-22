@@ -83,7 +83,7 @@ def send_audio_video(audio_queue, video_queue, sock, stop_event):
             sock.sendall(packet)
             
             time_to_send = time.time() - start_time
-            append_to_csv("./outputs/sending_info", time_to_send, len(video_data), len(audio_data))
+            append_to_csv("./outputs/sending_info.csv", time_to_send, len(video_data), len(audio_data))
 
         except Exception as e:
             print(f"Error while sending {e}")
@@ -172,7 +172,7 @@ def receive_audio_video(sock, window_name, stop_event):
     else:
         print("No audio data received, skipping file save.")
 
-def send_receive_and_save(sock, fps, window_name, width=1920, height=1080):
+def send_receive_and_save(sock, fps, window_name, width=640, height=480):
     audio_queue = multiprocessing.Queue()
     video_queue = multiprocessing.Queue()
     stop_event = multiprocessing.Event()
