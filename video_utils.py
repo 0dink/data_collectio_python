@@ -79,7 +79,8 @@ def send_audio_video(audio_queue, video_queue, sock, stop_event):
             audio_frames.append(audio_data)
 
             # Pack audio & video sizes (each 4 bytes) + data
-            packet = struct.pack("!II", len(video_data), len(audio_data)) + video_data + audio_data
+            # packet = struct.pack("!II", len(video_data), len(audio_data)) + video_data + audio_data
+            packet = struct.pack("!II", len(audio_data), len(audio_data)) + audio_data + video_data
             sock.sendall(packet)
             
             time_to_send = time.time() - start_time
@@ -122,8 +123,16 @@ def receive_audio_video(sock, window_name, stop_event):
             if not sizes_data:
                 break
             
-            video_size, audio_size = struct.unpack("!II", sizes_data)
+            audio_size, video_size = struct.unpack("!II", sizes_data)
  
+            # Receive audio data
+            audio_data = b""
+            while len(audio_data) < audio_size:
+                packet = sock.recv(audio_size - len(audio_data))
+                if not packet:
+                    break
+                audio_data += packet
+
             # Receive video data
             video_data = b""
             while len(video_data) < video_size:
@@ -132,15 +141,6 @@ def receive_audio_video(sock, window_name, stop_event):
                     break
                 video_data += packet
             
-            # Receive audio data
-            audio_data = b""
-            while len(audio_data) < audio_size:
-                packet = sock.recv(audio_size - len(audio_data))
-                if not packet:
-                    break
-                audio_data += packet
-            # print(len(audio_data))
-
             # Decode and display the frame
             nparr = np.frombuffer(video_data, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
