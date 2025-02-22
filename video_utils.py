@@ -80,7 +80,7 @@ def send_audio_video(audio_queue, video_queue, sock, stop_event):
 
             # Pack audio & video sizes (each 4 bytes) + data
             # packet = struct.pack("!II", len(video_data), len(audio_data)) + video_data + audio_data
-            packet = struct.pack("!II", len(audio_data), len(audio_data)) + audio_data + video_data
+            packet = struct.pack("!II", len(audio_data), len(video_data)) + audio_data + video_data
             sock.sendall(packet)
             
             time_to_send = time.time() - start_time
