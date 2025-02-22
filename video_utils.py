@@ -78,10 +78,9 @@ def send_audio_video(audio_queue, video_queue, sock, stop_event):
                         
             audio_frames.append(audio_data)
 
-            # Pack audio & video sizes (each 4 bytes) + data
-            packet = struct.pack("!II", len(video_data), len(audio_data)) + video_data + audio_data
+            packet = audio_data + video_data
             sock.sendall(packet)
-            
+
             time_to_send = time.time() - start_time
             append_to_csv("./outputs/sending_info.csv", time_to_send, len(video_data), len(audio_data))
 
@@ -117,29 +116,13 @@ def receive_audio_video(sock, window_name, stop_event):
     while not stop_event.is_set():
         try:
             
-            sizes_data = sock.recv(8)
+            audio_data = sock.recv(2024)
+            if not audio_data:
+                break  # Stop if no data is received
 
-            if not sizes_data:
+            video_data = sock.recv(1000000)  # Large buffer to get the rest in one go
+            if not video_data:
                 break
-            
-            video_size, audio_size = struct.unpack("!II", sizes_data)
- 
-            # Receive video data
-            video_data = b""
-            while len(video_data) < video_size:
-                packet = sock.recv(video_size - len(video_data))
-                if not packet:
-                    break
-                video_data += packet
-            
-            # Receive audio data
-            audio_data = b""
-            while len(audio_data) < audio_size:
-                packet = sock.recv(audio_size - len(audio_data))
-                if not packet:
-                    break
-                audio_data += packet
-            # print(len(audio_data))
 
             # Decode and display the frame
             nparr = np.frombuffer(video_data, np.uint8)
