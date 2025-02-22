@@ -116,7 +116,7 @@ def receive_audio_video(sock, window_name, stop_event):
     while not stop_event.is_set():
         try:
             
-            audio_data = sock.recv(2024)
+            audio_data = sock.recv(2048)
             if not audio_data:
                 break  # Stop if no data is received
 
