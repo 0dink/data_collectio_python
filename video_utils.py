@@ -5,12 +5,19 @@ import multiprocessing
 import keyboard
 import pyaudio
 import wave
+import time
+import csv
 
 # Audio Setting 
 AUDIO_FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
+
+def append_to_csv(filename, value1, value2, value3):
+    with open(filename, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([value1, value2, value3])
 
 def capture_video(video_queue, width, height, stop_event):
     try:  
@@ -63,6 +70,7 @@ def send_audio_video(audio_queue, video_queue, sock, stop_event):
 
     while not stop_event.is_set():
         try:
+            start_time = time.time()
             frame = video_queue.get()
             video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 30])[1].tobytes()
 
@@ -73,6 +81,9 @@ def send_audio_video(audio_queue, video_queue, sock, stop_event):
             # Pack audio & video sizes (each 4 bytes) + data
             packet = struct.pack("!II", len(video_data), len(audio_data)) + video_data + audio_data
             sock.sendall(packet)
+            
+            time_to_send = time.time() - start_time
+            append_to_csv("./outputs/sending_info", time_to_send, len(video_data), len(audio_data))
 
         except Exception as e:
             print(f"Error while sending {e}")
