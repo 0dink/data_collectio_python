@@ -19,9 +19,9 @@ def audio_record(audio_queue):
     stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
     while True:
-        data = stream.read(CHUNK)
+        audio_data = stream.read(CHUNK)
+        audio_queue.put(audio_data)
         
-
 def send_audio(audio_queue, socket):
     while True:
         audio_data = audio_queue.get()
