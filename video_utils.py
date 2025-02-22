@@ -195,7 +195,7 @@ def send_receive_and_save(audio_sock, video_sock, fps, window_name, width=1920, 
     capture_video_process = multiprocessing.Process(target=capture_video, args=(video_queue, width, height, stop_event,))
     capture_audio_process = multiprocessing.Process(target=capture_audio, args=(audio_queue, stop_event,))
     save_video_process = multiprocessing.Process(target=save_frames, args=(video_queue, fps, stop_event,))
-    save_audio_process = multiprocessing.Process(target=save_audio, args=(audio_queue,)) 
+    save_audio_process = multiprocessing.Process(target=save_audio, args=(audio_queue, stop_event,)) 
     send_audio_process = multiprocessing.Process(target=send_audio, args=(audio_queue, audio_sock, stop_event,))
     send_video_process = multiprocessing.Process(target=send_video, args=(video_queue, video_sock, stop_event,))
     receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, stop_event,))
