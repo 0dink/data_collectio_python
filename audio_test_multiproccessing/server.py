@@ -1,5 +1,6 @@
 import socket
 import pyaudio
+import struct
 import multiprocessing
 
 
@@ -16,14 +17,33 @@ def receive_audio(socket, address):
     with socket:
         print('Connected by', address)
         while True:
-            data = socket.recv(CHUNK * 2)
-            # print(len(data))
-            if not data:
+            sizes_data = socket.recv(8)
+
+
+            if not sizes_data:
                 break
-            stream.write(data)
+
+            number_size, audio_size = struct.unpack("!II", sizes_data)
+
+            number_data = b""
+            while len(number_data) < number_size:
+                packet = socket.recv(number_size - len(number_data))
+                if not packet:
+                    break
+                number_data += packet
+            
+            # Receive audio data
+            audio_data = b""
+            while len(audio_data) < audio_size:
+                packet = socket.recv(audio_size - len(audio_data))
+                if not packet:
+                    break
+                audio_data += packet
+
+            print(number_data)
+            stream.write(audio_data)
 
     socket.close()
-    socket.close() 
 
 def main():
     # Initialize server socket

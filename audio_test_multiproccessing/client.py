@@ -1,6 +1,8 @@
 import socket
 import pyaudio
+import struct
 import multiprocessing
+import random
 
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
@@ -14,6 +16,10 @@ def read_ip():
         print("getting IP: {e}")
         exit(1)
 
+def generate_random_number(number_queue):
+    while True:
+        number_queue.put(random.randint(0, 10))
+
 def audio_record(audio_queue):
     audio = pyaudio.PyAudio()
     stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
@@ -22,10 +28,13 @@ def audio_record(audio_queue):
         audio_data = stream.read(CHUNK)
         audio_queue.put(audio_data)
         
-def send_audio(audio_queue, socket):
+def send_audio_number(audio_queue, number_queue, socket):    
     while True:
         audio_data = audio_queue.get()
-        socket.send(audio_data)
+        number_data = number_queue.get()
+        packet = struct.pack("!II", len(number_data), len(audio_data)) + number_data + audio_data
+        
+        socket.sendall(packet)
 
 def main():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create client socket
@@ -37,14 +46,19 @@ def main():
         exit(1)
 
     audio_queue = multiprocessing.Queue()
+    number_queue = multiprocessing.Queue()
 
-    record_proccess = multiprocessing.Process(target=audio_record, args=(audio_queue,))
-    send_process = multiprocessing.Process(target=send_audio, args=(audio_queue, client_socket,))
+    record_process = multiprocessing.Process(target=audio_record, args=(audio_queue,))
+    random_number_process = multiprocessing.Process(target=generate_random_number, args=(number_queue,))
+    send_process = multiprocessing.Process(target=send_audio_number, args=(audio_queue, client_socket,))
 
-    record_proccess.start()
+
+    record_process.start()
+    random_number_process.start
     send_process.start()
 
-    record_proccess.join()
+    record_process.join()
+    random_number_process.join()
     send_process.join()
 
 if __name__ == "__main__":
