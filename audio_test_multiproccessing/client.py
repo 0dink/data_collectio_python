@@ -27,7 +27,6 @@ def send_audio(audio_queue, socket):
         audio_data = audio_queue.get()
         socket.send(audio_data)
 
-
 def main():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create client socket
     try:
@@ -39,8 +38,8 @@ def main():
 
     audio_queue = multiprocessing.Queue()
 
-    record_proccess = multiprocessing.Process(target=audio_record, args=(audio_queue))
-    send_process = multiprocessing.Process(target=send_audio, args=(audio_queue, client_socket))
+    record_proccess = multiprocessing.Process(target=audio_record, args=(audio_queue,))
+    send_process = multiprocessing.Process(target=send_audio, args=(audio_queue, client_socket,))
 
     record_proccess.start()
     send_process.start()

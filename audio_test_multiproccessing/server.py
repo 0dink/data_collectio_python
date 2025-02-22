@@ -17,7 +17,7 @@ def receive_audio(socket, address):
         print('Connected by', address)
         while True:
             data = socket.recv(CHUNK * 2)
-            print(len(data))
+            # print(len(data))
             if not data:
                 break
             stream.write(data)
