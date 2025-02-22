@@ -8,6 +8,7 @@ import pyaudio
 import wave
 import select
 import queue
+import socket
 
 # Audio Setting 
 AUDIO_FORMAT = pyaudio.paInt16
@@ -73,7 +74,9 @@ def save_frames(video_queue, fps, stop_event):
 
 def send_audio(audio_queue, audio_sock, stop_event):
     print("send_audio started")
+    audio_sock.settimeout(2.0)
     audio_frames = []
+
     while not stop_event.is_set():
         try:
             audio_data = audio_queue.get(timeout=0.1)
@@ -86,6 +89,9 @@ def send_audio(audio_queue, audio_sock, stop_event):
         
         except queue.Empty:
             continue
+        except (socket.timeout, socket.error) as e:
+            print(f"Socket error while sending audio: {e}")
+            break
         except Exception as e:
             print(f"Error while sending audio: {e}")
 
@@ -110,6 +116,8 @@ def send_audio(audio_queue, audio_sock, stop_event):
 
 def send_video(video_queue, video_sock, stop_event):
     print("send_video started")
+    video_sock.settimeout(2.0)  # Prevent socket from hanging forever
+    
     while not stop_event.is_set():
         try:
             frame = video_queue.get(timeout=0.1)
@@ -121,6 +129,9 @@ def send_video(video_queue, video_sock, stop_event):
             video_sock.sendall(video_data)  # Send video data
         except queue.Empty:
             continue
+        except (socket.timeout, socket.error) as e:
+            print(f"Socket error while sending video: {e}")
+            break
         except Exception as e:
             print(f"Error while sending video: {e}")
     print("send_video ended")
@@ -219,7 +230,7 @@ def receive_video(video_sock, window_name, stop_event):
     cv2.destroyAllWindows()
     print("receive_video ended")
 
-def send_receive_and_save(audio_sock, video_sock, fps, window_name, width=1920, height=1080):
+def send_receive_and_save(audio_sock, video_sock, fps, window_name, width=640, height=480):
     audio_queue = multiprocessing.Queue()
     video_queue = multiprocessing.Queue()
     stop_event = multiprocessing.Event()
