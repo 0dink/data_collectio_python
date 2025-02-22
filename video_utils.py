@@ -4,8 +4,6 @@ import numpy as np
 import multiprocessing
 import keyboard
 import pyaudio
-import wave
-import time
 import csv
 
 # Audio Setting 
@@ -13,11 +11,6 @@ AUDIO_FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
-
-def append_to_csv(filename, value1, value2, value3):
-    with open(filename, mode='a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([value1, value2, value3])
 
 def capture_video(video_queue, width, height, stop_event):
     try:  
