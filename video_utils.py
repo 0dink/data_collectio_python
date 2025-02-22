@@ -116,6 +116,9 @@ def send_audio(audio_queue, audio_sock, stop_event):
             print(f"Error when saving audio: {e}")
     else:
         print("No audio data received, skipping file save.")
+    
+    audio_sock.close()
+    print("send_audio ended")
 
 def send_video(video_queue, video_sock, stop_event):
     print("send_video started")
@@ -137,6 +140,8 @@ def send_video(video_queue, video_sock, stop_event):
             break
         except Exception as e:
             print(f"Error while sending video: {e}")
+    
+    video_sock.close()
     print("send_video ended")
 
 def receive_audio(audio_sock, stop_event): 
@@ -174,7 +179,9 @@ def receive_audio(audio_sock, stop_event):
             
             if audio_data:
                 stream.write(audio_data)
-
+        except (socket.timeout, socket.error) as e:
+            print(f"Socket error in receive_audio: {e}")
+            break  
         except Exception as e:
             print(f"Error receiving audio: {e}")
             break
@@ -182,12 +189,11 @@ def receive_audio(audio_sock, stop_event):
     stream.stop_stream()
     stream.close()
     audio.terminate()
+    audio_sock.close()
     print("receive_audio ended")
 
 def receive_video(video_sock, window_name, stop_event): 
     print("receive_video started")
-
-    # video_sock.setblocking(False)
 
     while not stop_event.is_set():
         try:
@@ -225,12 +231,15 @@ def receive_video(video_sock, window_name, stop_event):
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-
+        except (socket.timeout, socket.error) as e:
+            print(f"Socket error in receive_video: {e}")
+            break  
         except Exception as e:
             print(f"Error receiving video: {e}")
             break
 
     cv2.destroyAllWindows()
+    video_sock.close()
     print("receive_video ended")
 
 def send_receive_and_save(audio_sock, video_sock, fps, window_name, width=640, height=480):
