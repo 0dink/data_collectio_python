@@ -75,17 +75,20 @@ def send_audio(audio_queue, audio_sock, stop_event):
     audio_frames = []
     while not stop_event.is_set():
         try:
-            audio_data = audio_queue.get()
+            audio_data = audio_queue.get(timeout=0.1)
             audio_frames.append(audio_data)
             audio_size = len(audio_data)
 
             # Send audio size and data separately
             audio_sock.sendall(struct.pack("!I", audio_size))  # Send size first
             audio_sock.sendall(audio_data)  # Send audio data
+        
+        except queue.Empty:
+            continue
         except Exception as e:
             print(f"Error while sending audio: {e}")
 
-    if audio_frames:
+    if audio_frames: # for saving sent audio
         try: 
             audio = pyaudio.PyAudio()
             stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
@@ -98,7 +101,7 @@ def send_audio(audio_queue, audio_sock, stop_event):
             
             stream.stop_stream()
             stream.close()
-            audio.terminate()
+            audio.terminate() 
         except Exception as e:
             print(f"Error when saving audio: {e}")
     else:
@@ -108,13 +111,15 @@ def send_video(video_queue, video_sock, stop_event):
     print("send_video started")
     while not stop_event.is_set():
         try:
-            frame = video_queue.get()
+            frame = video_queue.get(timeout=0.1)
             video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 30])[1].tobytes()
             video_size = len(video_data)
 
             # Send video size and data separately
             video_sock.sendall(struct.pack("!I", video_size))  # Send size first
             video_sock.sendall(video_data)  # Send video data
+        except queue.Empty:
+            continue
         except Exception as e:
             print(f"Error while sending video: {e}")
     print("send_video ended")
