@@ -1,7 +1,6 @@
 import socket
 import pyaudio
 
-
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
@@ -32,3 +31,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
