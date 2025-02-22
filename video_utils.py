@@ -6,7 +6,7 @@ import multiprocessing
 import keyboard
 import pyaudio
 import wave
-
+import select
 
 # Audio Setting 
 AUDIO_FORMAT = pyaudio.paInt16
@@ -124,10 +124,15 @@ def receive_audio(audio_sock, stop_event):
     audio = pyaudio.PyAudio()
     stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
     
-    audio_sock.setblocking(False)
+    # audio_sock.setblocking(False)
 
     while not stop_event.is_set():
         try:
+            # Wait for data to be available with a timeout
+            ready, _, _ = select.select([audio_sock], [], [], 0.1)
+            if not ready:
+                continue  # No data, check stop_event again
+
             # Receive audio size first
             size_data = audio_sock.recv(4)
             if not size_data:
@@ -138,18 +143,21 @@ def receive_audio(audio_sock, stop_event):
             # Receive audio data
             audio_data = b""
             while len(audio_data) < audio_size:
+                ready, _, _ = select.select([audio_sock], [], [], 0.1)
+                if not ready:
+                    continue  # No data, avoid blocking
+                
                 packet = audio_sock.recv(audio_size - len(audio_data))
                 if not packet:
                     break
                 audio_data += packet
-
-            stream.write(audio_data)  # Play the audio immediately
-
-        except BlockingIOError:
-            continue  # No data available, retry
+            
+            if audio_data:
+                stream.write(audio_data)
 
         except Exception as e:
             print(f"Error receiving audio: {e}")
+            break
 
     stream.stop_stream()
     stream.close()
@@ -159,10 +167,16 @@ def receive_audio(audio_sock, stop_event):
 def receive_video(video_sock, window_name, stop_event): 
     print("receive_video started")
 
-    video_sock.setblocking(False)
+    # video_sock.setblocking(False)
 
     while not stop_event.is_set():
         try:
+            
+            # Wait for data availability
+            ready, _, _ = select.select([video_sock], [], [], 0.1)
+            if not ready:
+                continue  # No data, check stop_event again
+            
             # Receive video size first
             size_data = video_sock.recv(4)
             if not size_data:
@@ -173,25 +187,28 @@ def receive_video(video_sock, window_name, stop_event):
             # Receive video data
             video_data = b""
             while len(video_data) < video_size:
+                ready, _, _ = select.select([video_sock], [], [], 0.1)
+                if not ready:
+                    continue  # No data, avoid blocking
+                
                 packet = video_sock.recv(video_size - len(video_data))
                 if not packet:
                     break
                 video_data += packet
 
             # Decode and display the frame
-            nparr = np.frombuffer(video_data, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            if img is not None:
-                cv2.imshow(window_name, img)
+            if video_data: 
+                nparr = np.frombuffer(video_data, np.uint8)
+                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                if img is not None:
+                    cv2.imshow(window_name, img)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-                
-        except BlockingIOError:
-            continue  # No data available, retry
-    
+
         except Exception as e:
             print(f"Error receiving video: {e}")
+            break
 
     cv2.destroyAllWindows()
     print("receive_video ended")
