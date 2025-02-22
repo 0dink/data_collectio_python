@@ -124,6 +124,8 @@ def receive_audio(audio_sock, stop_event):
     audio = pyaudio.PyAudio()
     stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
     
+    audio_sock.setblocking(False)
+
     while not stop_event.is_set():
         try:
             # Receive audio size first
@@ -143,6 +145,9 @@ def receive_audio(audio_sock, stop_event):
 
             stream.write(audio_data)  # Play the audio immediately
 
+        except BlockingIOError:
+            continue  # No data available, retry
+
         except Exception as e:
             print(f"Error receiving audio: {e}")
 
@@ -153,6 +158,9 @@ def receive_audio(audio_sock, stop_event):
 
 def receive_video(video_sock, window_name, stop_event): 
     print("receive_video started")
+
+    video_sock.setblocking(False)
+
     while not stop_event.is_set():
         try:
             # Receive video size first
@@ -178,7 +186,10 @@ def receive_video(video_sock, window_name, stop_event):
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-
+                
+        except BlockingIOError:
+            continue  # No data available, retry
+    
         except Exception as e:
             print(f"Error receiving video: {e}")
 
