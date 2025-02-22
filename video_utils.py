@@ -70,32 +70,13 @@ def save_frames(video_queue, fps, stop_event):
 
     print("save_frames ended")
 
-def save_audio(audio_queue, stop_event):
-    try:
-        print("save_audio started")
-        p = pyaudio.PyAudio()
-        wf = wave.open("./outputs/output_audio.wav", 'wb')
-        wf.setnchannels(CHANNELS)
-        wf.setsampwidth(AUDIO_FORMAT)
-        wf.setframerate(RATE)
-
-        while not stop_event.is_set():
-            audio_chunk = audio_queue.get() 
-            
-            wf.writeframes(audio_chunk)
-
-        wf.close()
-        p.terminate()
-    except Exception as e:
-        print(f"Error in save_audio: {e}")
-
-    print("save_audio ended")
-
 def send_audio(audio_queue, audio_sock, stop_event):
     print("send_audio started")
+    audio_frames = []
     while not stop_event.is_set():
         try:
             audio_data = audio_queue.get()
+            audio_frames.append(audio_data)
             audio_size = len(audio_data)
 
             # Send audio size and data separately
@@ -103,7 +84,25 @@ def send_audio(audio_queue, audio_sock, stop_event):
             audio_sock.sendall(audio_data)  # Send audio data
         except Exception as e:
             print(f"Error while sending audio: {e}")
-    print("send_audio ended")
+
+    if audio_frames:
+        try: 
+            audio = pyaudio.PyAudio()
+            stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
+            
+            with wave.open("./outputs/sent_audio.wav", "wb") as wf:
+                wf.setnchannels(CHANNELS)
+                wf.setsampwidth(audio.get_sample_size(AUDIO_FORMAT))
+                wf.setframerate(RATE)
+                wf.writeframes(b"".join(audio_frames))
+            
+            stream.stop_stream()
+            stream.close()
+            audio.terminate()
+        except Exception as e:
+            print(f"Error when saving audio: {e}")
+    else:
+        print("No audio data received, skipping file save.")
 
 def send_video(video_queue, video_sock, stop_event):
     print("send_video started")
@@ -195,7 +194,7 @@ def send_receive_and_save(audio_sock, video_sock, fps, window_name, width=1920, 
     capture_video_process = multiprocessing.Process(target=capture_video, args=(video_queue, width, height, stop_event,))
     capture_audio_process = multiprocessing.Process(target=capture_audio, args=(audio_queue, stop_event,))
     save_video_process = multiprocessing.Process(target=save_frames, args=(video_queue, fps, stop_event,))
-    save_audio_process = multiprocessing.Process(target=save_audio, args=(audio_queue, stop_event,)) 
+    # save_audio_process = multiprocessing.Process(target=save_audio, args=(audio_queue, stop_event,)) 
     send_audio_process = multiprocessing.Process(target=send_audio, args=(audio_queue, audio_sock, stop_event,))
     send_video_process = multiprocessing.Process(target=send_video, args=(video_queue, video_sock, stop_event,))
     receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, stop_event,))
@@ -205,7 +204,7 @@ def send_receive_and_save(audio_sock, video_sock, fps, window_name, width=1920, 
     capture_video_process.start()
     capture_audio_process.start()
     save_video_process.start()
-    save_audio_process.start()
+    # save_audio_process.start()
     send_audio_process.start()
     send_video_process.start()
     receive_audio_process.start()
@@ -223,7 +222,7 @@ def send_receive_and_save(audio_sock, video_sock, fps, window_name, width=1920, 
     capture_video_process.join()
     capture_audio_process.join()
     save_video_process.join()
-    save_audio_process.join()
+    # save_audio_process.join()
     send_audio_process.join()
     send_video_process.join()
     receive_audio_process.join()
