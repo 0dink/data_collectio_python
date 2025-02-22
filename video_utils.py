@@ -7,6 +7,7 @@ import keyboard
 import pyaudio
 import wave
 import select
+import queue
 
 # Audio Setting 
 AUDIO_FORMAT = pyaudio.paInt16
