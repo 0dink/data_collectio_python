@@ -74,7 +74,7 @@ def save_audio(audio_queue, stop_event):
     try:
         print("save_audio started")
         p = pyaudio.PyAudio()
-        wf = wave.open("./outputs/output_audio.wav")
+        wf = wave.open("./outputs/output_audio.wav", 'wb')
         wf.setnchannels(CHANNELS)
         wf.setsamplewidth(AUDIO_FORMAT)
         wf.setframerate(RATE)
