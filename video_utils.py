@@ -152,7 +152,7 @@ def receive_video(video_sock, window_name, stop_event):
 
     cv2.destroyAllWindows()
 
-def send_receive_and_save(audio_sock, video_sock, fps, window_name, width=640, height=480):
+def send_receive_and_save(audio_sock, video_sock, fps, window_name, width=1920, height=1080):
     audio_queue = multiprocessing.Queue()
     video_queue = multiprocessing.Queue()
     stop_event = multiprocessing.Event()
