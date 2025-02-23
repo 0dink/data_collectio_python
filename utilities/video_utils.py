@@ -64,7 +64,7 @@ def save_frames(video_queue, fps, save_collection_to, width, height, stop_event)
     try:
         print("save_frames started")
         fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Try MJPG codec
-        video_writer = cv2.VideoWriter(f"{save_collection_to}/output.avi", fourcc, int(fps), (width, height))
+        video_writer = cv2.VideoWriter(f"{save_collection_to}/output.avi", fourcc, fps, (width, height))
         
         while not stop_event.is_set():
             try:
@@ -74,7 +74,6 @@ def save_frames(video_queue, fps, save_collection_to, width, height, stop_event)
                 continue
         
         video_writer.release()
-
     except Exception as e:
         print(f"Error in save_frames: {e}")
 
@@ -251,8 +250,6 @@ def send_receive_and_save(audio_sock, video_sock, window_name, fps, save_collect
     audio_queue = multiprocessing.Queue()
     video_queue = multiprocessing.Queue()
     stop_event = multiprocessing.Event()
-
-    print(width, height)
 
     # Create processes
     capture_video_process = multiprocessing.Process(target=capture_video, args=(video_queue, width, height, stop_event,))
