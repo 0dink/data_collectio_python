@@ -9,6 +9,7 @@ import wave
 import select
 import queue
 import socket
+import time
 
 # Audio Setting 
 AUDIO_FORMAT = pyaudio.paInt16
@@ -49,13 +50,14 @@ def capture_audio(audio_queue, stop_event):
         while not stop_event.is_set():
             audio_data = stream.read(CHUNK, exception_on_overflow=True)
             audio_queue.put(audio_data)
-
+            
     except Exception as e:
-        print(f"error with audio stream: {e}")
+        print(f"Error in capture_audio: {e}")
 
     stream.stop_stream()
     stream.close()
     audio.terminate()
+
     print("capture_audio ended")
 
 def save_frames(video_queue, fps, stop_event):
@@ -73,6 +75,7 @@ def save_frames(video_queue, fps, stop_event):
     except Exception as e:
         print(f"Error in save_frames: {e}")
 
+    video_writer.release()  # Ensure resources are released
     print("save_frames ended")
 
 def send_audio(audio_queue, audio_sock, stop_event):
@@ -273,9 +276,18 @@ def send_receive_and_save(audio_sock, video_sock, fps, window_name, width=640, h
             print("Stopping...")
             stop_event.set()
             break
-
+    
+    time.sleep(0.5)
     capture_video_process.join()
-    capture_audio_process.join()
+
+    capture_audio_process.join(timeout=5) # I can not figure out why capture_audio_process hangs 
+    if capture_audio_process.is_alive():
+        print(f"Capture audio process is still alive (PID: {capture_audio_process.pid}) and was terminated")
+        capture_audio_process.terminate()
+        capture_audio_process.join()
+    else:
+        print(f"Capture audio process joined successfully.")
+
     save_video_process.join()
     send_audio_process.join()
     send_video_process.join()
