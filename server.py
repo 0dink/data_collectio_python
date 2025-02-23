@@ -1,8 +1,13 @@
 import socket
-from video_utils import send_receive_and_save
+from utilities.video_utils import send_receive_and_save
+from utilities.io_utils import create_collection_folder, read_config
 
 def main():
     # Initialize server sockets
+
+    config = read_config()
+    save_collection_to = create_collection_folder(config["output_directory"])
+
     video_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     audio_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -26,7 +31,7 @@ def main():
     print(f"Audio connection established with {audio_address}")
 
     # Start send/receive processes
-    send_receive_and_save(audio_client, video_client, 20, "Server")
+    send_receive_and_save(audio_client, video_client, 20, "Server", save_collection_to, width=config["width"], height=["height"])
 
     # Close connections
     video_client.close()
