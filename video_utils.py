@@ -64,7 +64,7 @@ def save_frames(video_queue, fps, stop_event):
     try:
         print("save_frames started")
         fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Try MJPG codec
-        video_writer = cv2.VideoWriter("./outputs/output.avi", fourcc, fps, (640, 480))
+        video_writer = cv2.VideoWriter("./outputs/output.avi", fourcc, fps, (1920, 1080))
         
         while not stop_event.is_set():
             try:
