@@ -31,7 +31,7 @@ def main():
     print(f"Audio connection established with {audio_address}")
 
     # Start send/receive processes
-    send_receive_and_save(audio_client, video_client, 20, "Server", save_collection_to, width=config["width"], height=["height"])
+    send_receive_and_save(audio_client, video_client, 20, "Server", save_collection_to, config["width"], config["height"])
 
     # Close connections
     video_client.close()

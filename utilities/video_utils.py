@@ -34,11 +34,11 @@ def capture_video(video_queue, width, height, stop_event):
                 video_queue.put(frame)  # Put the frame in the queue
             else:
                 break
-            
+        
+        cap.release()
     except Exception as e:
         print(f"error with audio stream: {e}")
 
-    cap.release()
     print("capture_video ended")
 
 def capture_audio(audio_queue, stop_event):
@@ -64,7 +64,7 @@ def save_frames(video_queue, fps, save_collection_to, width, height, stop_event)
     try:
         print("save_frames started")
         fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Try MJPG codec
-        video_writer = cv2.VideoWriter(f"{save_collection_to}/output.avi", fourcc, fps, (width, height))
+        video_writer = cv2.VideoWriter(f"{save_collection_to}/output.avi", fourcc, int(fps), (width, height))
         
         while not stop_event.is_set():
             try:
@@ -72,10 +72,12 @@ def save_frames(video_queue, fps, save_collection_to, width, height, stop_event)
                 video_writer.write(frame)
             except queue.Empty:
                 continue
+        
+        video_writer.release()
+
     except Exception as e:
         print(f"Error in save_frames: {e}")
 
-    video_writer.release()  # Ensure resources are released
     print("save_frames ended")
 
 def send_audio(audio_queue, audio_sock, save_collection_to, stop_event):
@@ -106,7 +108,7 @@ def send_audio(audio_queue, audio_sock, save_collection_to, stop_event):
             audio = pyaudio.PyAudio()
             stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
             
-            with wave.open(f"{save_collection_to}sent_audio.wav", "wb") as wf:
+            with wave.open(f"{save_collection_to}/sent_audio.wav", "wb") as wf:
                 wf.setnchannels(CHANNELS)
                 wf.setsampwidth(audio.get_sample_size(AUDIO_FORMAT))
                 wf.setframerate(RATE)
@@ -249,6 +251,8 @@ def send_receive_and_save(audio_sock, video_sock, window_name, fps, save_collect
     audio_queue = multiprocessing.Queue()
     video_queue = multiprocessing.Queue()
     stop_event = multiprocessing.Event()
+
+    print(width, height)
 
     # Create processes
     capture_video_process = multiprocessing.Process(target=capture_video, args=(video_queue, width, height, stop_event,))

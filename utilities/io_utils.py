@@ -20,7 +20,7 @@ def create_collection_folder(directory):
     # Return the absolute path of the folder
     return os.path.abspath(folder_path)
 
-def read_config(config_path="../inputs/config.yaml"):
+def read_config(config_path="./inputs/config.yaml"):
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
-    return file
+    return config
