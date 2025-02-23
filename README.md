@@ -8,3 +8,4 @@ Add the following two files to the `inputs` folder before running
 * `width:` frame width
 * `height:` frame height
 * `fps:` fps to capture at
+* `calibration_mode:` for list of valid modes see docs string of `display_dot_and_record` in `calibration_utils` although `calibration_quincunx` should be used primarily 

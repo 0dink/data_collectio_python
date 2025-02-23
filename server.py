@@ -1,12 +1,21 @@
 import socket
 from utilities.video_utils import send_receive_and_save
 from utilities.io_utils import create_collection_folder, read_config
+from utilities.calibration_utils import display_dot_and_record
 
 def main():
     # Initialize server sockets
 
     config = read_config()
     save_collection_to = create_collection_folder(config["output_directory"])
+
+    capture_resolution = (config["width"], config["height"])
+    display_resolution = (1920, 1080) # make this dynamic 
+    display_dot_and_record(display_resolution, capture_resolution, config["calibration"], config["fps"], save_collection_to, path_step=5)
+
+    ####################
+    # connection stuff #
+    ####################
 
     video_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     audio_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
