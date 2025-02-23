@@ -64,7 +64,7 @@ def save_frames(video_queue, fps, stop_event):
     try:
         print("save_frames started")
         fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Try MJPG codec
-        video_writer = cv2.VideoWriter("./outputs/output.avi", fourcc, fps, (1920, 1080))
+        video_writer = cv2.VideoWriter("./outputs/output.avi", fourcc, fps, (640, 480))
         
         while not stop_event.is_set():
             try:
@@ -278,9 +278,16 @@ def send_receive_and_save(audio_sock, video_sock, fps, window_name, width=1920, 
             break
     
     time.sleep(0.5)
-    capture_video_process.join()
 
-    capture_audio_process.join(timeout=5) # I can not figure out why capture_audio_process hangs 
+    capture_video_process.join(timeout=5)
+    if capture_video_process.is_alive():
+        print(f"Capture video process is still alive (PID: {capture_video_process.pid}) and was terminated")
+        capture_video_process.terminate()
+        capture_video_process.join()
+    else:
+        print(f"Capture video process joined successfully.")
+
+    capture_audio_process.join(timeout=5) 
     if capture_audio_process.is_alive():
         print(f"Capture audio process is still alive (PID: {capture_audio_process.pid}) and was terminated")
         capture_audio_process.terminate()
