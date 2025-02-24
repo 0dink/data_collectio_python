@@ -7,7 +7,7 @@ from utilities.calibration_utils import display_dot_and_record
 
 def generate_seeded_id():
     random.seed(int(time.time()))  # Seed with current timestamp
-    return random.randint(0, 2**32 - 1)  # Generate 8-bit integer (0-255)
+    return random.randint(0, 2**32 - 1)  # Generate 32-bit integer
 
 def main():
     # Initialize server sockets
@@ -50,7 +50,7 @@ def main():
     with open(f"{save_collection_to}/session_id.txt", "w") as f:
         f.write(str(unique_id))
 
-    video_client.sendall(unique_id.to_bytes(4, 'big'))  # Send ID as a single byte
+    video_client.sendall(unique_id.to_bytes(4, 'big'))
 
     # Start send/receive processes
     send_receive_and_save(audio_client, video_client, "Server", config["fps"], save_collection_to, config["width"], config["height"])
