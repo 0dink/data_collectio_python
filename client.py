@@ -35,6 +35,13 @@ def main():
         print(f"Connection failed: {e}")
         exit(1)
 
+    unique_id = int.from_bytes(video_socket.recv(1), 'big')  # Read one byte
+    print(f"Received unique ID: {unique_id}")
+
+    # Optionally, save this ID alongside collected data
+    with open(f"{save_collection_to}/session_id.txt", "w") as f:
+        f.write(str(unique_id))
+    
     send_receive_and_save(audio_socket, video_socket, "Client", config["fps"], save_collection_to, config["width"], config["height"],)
 
     # Close sockets

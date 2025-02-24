@@ -1,7 +1,13 @@
 import socket
+import time 
+import random
 from utilities.video_utils import send_receive_and_save
 from utilities.io_utils import create_collection_folder, read_config
 from utilities.calibration_utils import display_dot_and_record
+
+def generate_seeded_id():
+    random.seed(int(time.time()))  # Seed with current timestamp
+    return random.randint(0, 255)  # Generate 8-bit integer (0-255)
 
 def main():
     # Initialize server sockets
@@ -39,6 +45,13 @@ def main():
     print(f"Video connection established with {video_address}")
     print(f"Audio connection established with {audio_address}")
 
+    unique_id = generate_seeded_id()
+    print(f"Generated unique ID: {unique_id}")
+    with open(f"{save_collection_to}/session_id.txt", "w") as f:
+        f.write(str(unique_id))
+
+    video_client.sendall(unique_id.to_bytes(1, 'big'))  # Send ID as a single byte
+
     # Start send/receive processes
     send_receive_and_save(audio_client, video_client, "Server", config["fps"], save_collection_to, config["width"], config["height"])
 
@@ -50,3 +63,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
