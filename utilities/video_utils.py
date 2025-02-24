@@ -178,12 +178,7 @@ def receive_audio(audio_sock, save_collection_to, stop_event):
             size_data = audio_sock.recv(4)
             if not size_data:
                 break
-            
-            if timestamp_flag:
-                with open(f"{save_collection_to}/ts_audio_receive.txt", "w") as file:
-                    file.write(str(time.time()))
-                timestamp_flag = False
-            
+                        
             audio_size = struct.unpack("!I", size_data)[0]
 
             # Receive audio data
@@ -198,6 +193,11 @@ def receive_audio(audio_sock, save_collection_to, stop_event):
                     break
                 audio_data += packet
             
+            if timestamp_flag:
+                with open(f"{save_collection_to}/ts_audio_receive.txt", "w") as file:
+                    file.write(str(time.time()))
+                timestamp_flag = False
+
             if audio_data:
                 stream.write(audio_data)
         except (socket.timeout, socket.error) as e:
@@ -232,12 +232,7 @@ def receive_video(video_sock, window_name, save_collection_to, fps, width, heigh
             size_data = video_sock.recv(4)
             if not size_data:
                 break
-            
-            if timestamp_flag:
-                with open(f"{save_collection_to}/ts_video_receive.txt", "w") as file:
-                    file.write(str(time.time()))
-                timestamp_flag = False
-            
+
             video_size = struct.unpack("!I", size_data)[0]
 
             # Receive video data
@@ -251,6 +246,11 @@ def receive_video(video_sock, window_name, save_collection_to, fps, width, heigh
                 if not packet:
                     break
                 video_data += packet
+
+            if timestamp_flag:
+                with open(f"{save_collection_to}/ts_video_receive.txt", "w") as file:
+                    file.write(str(time.time()))
+                timestamp_flag = False
 
             # Decode and display the frame
             if video_data:
