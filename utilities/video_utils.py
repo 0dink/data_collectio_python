@@ -17,9 +17,12 @@ CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
 
-def capture_video(video_queue, width, height, stop_event):
+def capture_video(video_queue, width, height, save_collection_to, stop_event):
     try:  
         print("capture_video started")
+        
+        timestamp_flag = True
+
         cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
@@ -32,6 +35,10 @@ def capture_video(video_queue, width, height, stop_event):
             ret, frame = cap.read()
             if ret:
                 video_queue.put(frame)  # Put the frame in the queue
+                if timestamp_flag:
+                    with open(f"{save_collection_to}/ts_video_captured.txt", "w") as file:
+                        file.write(str(time.time()))
+                    timestamp_flag = False
             else:
                 break
         
@@ -41,15 +48,21 @@ def capture_video(video_queue, width, height, stop_event):
 
     print("capture_video ended")
 
-def capture_audio(audio_queue, stop_event):
+def capture_audio(audio_queue, save_collection_to, stop_event):
     try:
         print("capture_audio started")
         audio = pyaudio.PyAudio()
         stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+        timestamp_flag = True
 
         while not stop_event.is_set():
             audio_data = stream.read(CHUNK, exception_on_overflow=True)
             audio_queue.put(audio_data)
+            
+            if timestamp_flag:
+                with open(f"{save_collection_to}/ts_audio_capture.txt", "w") as file:
+                    file.write(str(time.time()))
+                timestamp_flag = False
 
     except Exception as e:
         print(f"Error in capture_audio: {e}")
@@ -148,13 +161,12 @@ def send_video(video_queue, video_sock, stop_event):
     video_sock.close()
     print("send_video ended")
 
-def receive_audio(audio_sock, stop_event): 
+def receive_audio(audio_sock, save_collection_to, stop_event): 
     print("receive_audio started")
     audio = pyaudio.PyAudio()
     stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
+    timestamp_flag = True
     
-    # audio_sock.setblocking(False)
-
     while not stop_event.is_set():
         try:
             # Wait for data to be available with a timeout
@@ -166,6 +178,11 @@ def receive_audio(audio_sock, stop_event):
             size_data = audio_sock.recv(4)
             if not size_data:
                 break
+            
+            if timestamp_flag:
+                with open(f"{save_collection_to}/ts_audio_receive.txt", "w") as file:
+                    file.write(str(time.time()))
+                timestamp_flag = False
             
             audio_size = struct.unpack("!I", size_data)[0]
 
@@ -201,7 +218,8 @@ def receive_video(video_sock, window_name, save_collection_to, fps, width, heigh
     
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     video_writer = cv2.VideoWriter(f"{save_collection_to}/received_video.avi", fourcc, fps, (width, height))
-    
+    timestamp_flag = True
+
     while not stop_event.is_set():
         try:
             
@@ -214,6 +232,11 @@ def receive_video(video_sock, window_name, save_collection_to, fps, width, heigh
             size_data = video_sock.recv(4)
             if not size_data:
                 break
+            
+            if timestamp_flag:
+                with open(f"{save_collection_to}/ts_video_receive.txt", "w") as file:
+                    file.write(str(time.time()))
+                timestamp_flag = False
             
             video_size = struct.unpack("!I", size_data)[0]
 
@@ -230,7 +253,7 @@ def receive_video(video_sock, window_name, save_collection_to, fps, width, heigh
                 video_data += packet
 
             # Decode and display the frame
-            if video_data: 
+            if video_data:
                 nparr = np.frombuffer(video_data, np.uint8)
                 img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 if img is not None:
@@ -257,12 +280,12 @@ def send_receive_and_save(audio_sock, video_sock, window_name, fps, save_collect
     stop_event = multiprocessing.Event()
 
     # Create processes
-    capture_video_process = multiprocessing.Process(target=capture_video, args=(video_queue, width, height, stop_event,))
-    capture_audio_process = multiprocessing.Process(target=capture_audio, args=(audio_queue, stop_event,))
+    capture_video_process = multiprocessing.Process(target=capture_video, args=(video_queue, width, height, save_collection_to, stop_event,))
+    capture_audio_process = multiprocessing.Process(target=capture_audio, args=(audio_queue, save_collection_to, stop_event,))
     save_video_process = multiprocessing.Process(target=save_frames, args=(video_queue, fps, save_collection_to, width, height,stop_event,))
     send_audio_process = multiprocessing.Process(target=send_audio, args=(audio_queue, audio_sock, save_collection_to, stop_event,)) # also saves audio
     send_video_process = multiprocessing.Process(target=send_video, args=(video_queue, video_sock, stop_event,))
-    receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, stop_event,))
+    receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, save_collection_to, stop_event,))
     receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, window_name, save_collection_to, fps, width, height, stop_event,))
 
     # Start processes
