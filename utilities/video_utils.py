@@ -63,7 +63,7 @@ def capture_audio(audio_queue, stop_event):
 def save_frames(video_queue, fps, save_collection_to, width, height, stop_event):
     try:
         print("save_frames started")
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Try MJPG codec
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
         video_writer = cv2.VideoWriter(f"{save_collection_to}/output.avi", fourcc, fps, (width, height))
         
         while not stop_event.is_set():
@@ -131,7 +131,7 @@ def send_video(video_queue, video_sock, stop_event):
     while not stop_event.is_set():
         try:
             frame = video_queue.get(timeout=0.1)
-            video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 30])[1].tobytes()
+            video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 25])[1].tobytes()
             video_size = len(video_data)
 
             # Send video size and data separately
@@ -196,9 +196,12 @@ def receive_audio(audio_sock, stop_event):
     audio_sock.close()
     print("receive_audio ended")
 
-def receive_video(video_sock, window_name, stop_event): 
+def receive_video(video_sock, window_name, save_collection_to, fps, width, height, stop_event): 
     print("receive_video started")
-
+    
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    video_writer = cv2.VideoWriter(f"{save_collection_to}/received_video.avi", fourcc, fps, (width, height))
+    
     while not stop_event.is_set():
         try:
             
@@ -232,6 +235,7 @@ def receive_video(video_sock, window_name, stop_event):
                 img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 if img is not None:
                     cv2.imshow(window_name, img)
+                    video_writer.write(img)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -242,6 +246,7 @@ def receive_video(video_sock, window_name, stop_event):
             print(f"Error receiving video: {e}")
             break
 
+    video_writer.release()
     cv2.destroyAllWindows()
     video_sock.close()
     print("receive_video ended")
@@ -258,7 +263,7 @@ def send_receive_and_save(audio_sock, video_sock, window_name, fps, save_collect
     send_audio_process = multiprocessing.Process(target=send_audio, args=(audio_queue, audio_sock, save_collection_to, stop_event,)) # also saves audio
     send_video_process = multiprocessing.Process(target=send_video, args=(video_queue, video_sock, stop_event,))
     receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, stop_event,))
-    receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, window_name, stop_event,))
+    receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, window_name, save_collection_to, fps, width, height, stop_event,))
 
     # Start processes
     capture_video_process.start()
