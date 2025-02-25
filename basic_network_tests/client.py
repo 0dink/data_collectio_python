@@ -2,7 +2,7 @@ import socket
 
 def read_ip():
     try:
-        return open("./inputs/server_ip.txt", "r").readline().strip()
+        return open("../inputs/server_ip.txt", "r").readline().strip()
     except Exception as e:
         print(f"Error reading IP: {e}")
         exit(1)
