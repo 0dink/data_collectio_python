@@ -8,15 +8,18 @@ def read_ip():
         exit(1)
 
 def main():
+    try:
+        server_ip = read_ip()
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect((server_ip, 8080))
+    
+        message = "Hello, World!"
+        client_socket.sendall(message.encode())
+    
+        client_socket.close()
 
-    server_ip = read_ip()
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((server_ip, 8080))
-    
-    message = "Hello, World!"
-    client_socket.sendall(message.encode())
-    
-    client_socket.close()
+    except Exception as e:
+        print(f"client error: {e}")
 
 if __name__ == "__main__":
     main()
