@@ -22,7 +22,7 @@ def capture_video(send_video_queue, save_video_queue, width, height, save_collec
         print("capture_video started")
         
         timestamp_flag = True
-
+        
         cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
@@ -34,8 +34,9 @@ def capture_video(send_video_queue, save_video_queue, width, height, save_collec
         while not stop_event.is_set():
             ret, frame = cap.read()
             if ret:
-                send_video_queue.put(frame)
                 save_video_queue.put(frame)
+                send_video_queue.put(frame)
+                    
                 if timestamp_flag:
                     with open(f"{save_collection_to}/ts_video_captured.txt", "w") as file:
                         file.write(str(time.time()))
@@ -74,15 +75,16 @@ def capture_audio(audio_queue, save_collection_to, stop_event):
 
     print("capture_audio ended")
 
-def save_frames(video_queue, fps, save_collection_to, width, height, stop_event):
+def save_frames(save_video_queue, fps, save_collection_to, width, height, stop_event):
     try:
         print("save_frames started")
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        video_writer = cv2.VideoWriter(f"{save_collection_to}/output.avi", fourcc, 28, (width, height))
+        video_writer = cv2.VideoWriter(f"{save_collection_to}/output.avi", fourcc, fps, (width, height))
         
         while not stop_event.is_set():
             try:
-                frame = video_queue.get(timeout=0.1)
+                # _ = send_video_queue.get(timeout=0.1)
+                frame = save_video_queue.get(timeout=0.1)
                 video_writer.write(frame)
             except queue.Empty:
                 continue
@@ -144,11 +146,14 @@ def send_video(video_queue, video_sock, stop_event):
     
     while not stop_event.is_set():
         try:
+            
+            while not video_queue.empty():
+                video_queue.get_nowait()  # Discard older frame
+            
             frame = video_queue.get(timeout=0.1)
             video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 25])[1].tobytes()
             video_size = len(video_data)
 
-            # Send video size and data separately
             video_sock.sendall(struct.pack("!I", video_size))  # Send size first
             video_sock.sendall(video_data)  # Send video data
         except queue.Empty:
@@ -277,7 +282,7 @@ def receive_video(video_sock, window_name, save_collection_to, fps, width, heigh
 
 def send_receive_and_save(audio_sock, video_sock, window_name, fps, save_collection_to, width, height):
     audio_queue = multiprocessing.Queue()
-    send_video_queue = multiprocessing.Queue()
+    send_video_queue = multiprocessing.Queue(maxsize=15)
     save_video_queue = multiprocessing.Queue()
     stop_event = multiprocessing.Event()
 
