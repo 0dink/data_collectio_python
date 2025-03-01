@@ -186,11 +186,11 @@ def receive_audio(audio_sock, audio_buffer, save_collection_to, stop_event):
                 continue  # No data, check stop_event again
 
             # Receive audio size first
-            size_data = audio_sock.recv(4)
+            size_data = audio_sock.recv(12)
             if not size_data:
                 break
                         
-            timestamp, audio_size = struct.unpack("!dI", size_data)[0]
+            timestamp, audio_size = struct.unpack("!dI", size_data)
 
             # Receive audio data
             audio_data = b""
@@ -242,11 +242,11 @@ def receive_video(video_sock, video_buffer, window_name, save_collection_to, fps
                 continue  # No data, check stop_event again
             
             # Receive video size first
-            size_data = video_sock.recv(4)
+            size_data = video_sock.recv(12)
             if not size_data:
                 break
 
-            timestamp, video_size = struct.unpack("!dI", size_data)[0]
+            timestamp, video_size = struct.unpack("!dI", size_data)
 
             # Receive video data
             video_data = b""
