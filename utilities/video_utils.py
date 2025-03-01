@@ -167,7 +167,7 @@ def send_video(video_queue, video_sock, stop_event):
     video_sock.close()
     print("send_video ended")
 
-def receive_audio(audio_sock, save_collection_to, stop_event): 
+def receive_audio(audio_sock, audio_queue, save_collection_to, stop_event): 
     print("receive_audio started")
     audio = pyaudio.PyAudio()
     stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
@@ -205,7 +205,10 @@ def receive_audio(audio_sock, save_collection_to, stop_event):
                 timestamp_flag = False
 
             if audio_data:
-                stream.write(audio_data)
+                recv_timestamp = time.time()
+                audio_queue.put(('audio', audio_data, recv_timestamp))
+                # stream.write(audio_data)
+        
         except (socket.timeout, socket.error) as e:
             print(f"Socket error in receive_audio: {e}")
             break  
@@ -219,7 +222,7 @@ def receive_audio(audio_sock, save_collection_to, stop_event):
     audio_sock.close()
     print("receive_audio ended")
 
-def receive_video(video_sock, window_name, save_collection_to, fps, width, height, stop_event): 
+def receive_video(video_sock, video_queue, window_name, save_collection_to, fps, width, height, stop_event): 
     print("receive_video started")
     
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
@@ -260,11 +263,13 @@ def receive_video(video_sock, window_name, save_collection_to, fps, width, heigh
 
             # Decode and display the frame
             if video_data:
+                recv_timestamp = time.time()
                 nparr = np.frombuffer(video_data, np.uint8)
                 img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 if img is not None:
-                    cv2.imshow(window_name, img)
+                    # cv2.imshow(window_name, img)
                     video_writer.write(img)
+                    video_queue.put(('video', img, recv_timestamp))
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -280,21 +285,52 @@ def receive_video(video_sock, window_name, save_collection_to, fps, width, heigh
     video_sock.close()
     print("receive_video ended")
 
+def sync_and_display(audio_queue, video_queue, stop_event, window_name):
+    print("Sync and display started")
+    audio_stream = pyaudio.PyAudio()
+    audio_stream_output = audio_stream.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
+    
+    while not stop_event.is_set():
+        if not audio_queue.empty() and not video_queue.empty():
+            audio_type, audio_data, audio_timestamp = audio_queue.get()
+            video_type, video_data, video_timestamp = video_queue.get()
+
+            if audio_timestamp <= video_timestamp:
+                # Play audio first
+                audio_stream_output.write(audio_data)
+                # print("Audio Played at timestamp:", audio_timestamp)
+
+                # Display video frame
+                cv2.imshow(window_name, video_data)
+                # print("Video Played at timestamp:", video_timestamp)
+            else:
+                # Play video first if audio is not ready
+                cv2.imshow(window_name, video_data)
+                # print("Video Played at timestamp:", video_timestamp)
+                
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
 def send_receive_and_save(audio_sock, video_sock, window_name, fps, save_collection_to, width, height):
-    audio_queue = multiprocessing.Queue()
+    send_audio_queue = multiprocessing.Queue()
     send_video_queue = multiprocessing.Queue(maxsize=15)
     save_video_queue = multiprocessing.Queue()
+
+    received_audio_queue = multiprocessing.Queue()
+    received_video_queue = multiprocessing.Queue()
+
     stop_event = multiprocessing.Event()
 
     # Create processes
     capture_video_process = multiprocessing.Process(target=capture_video, args=(send_video_queue, save_video_queue, width, height, save_collection_to, stop_event,))
-    capture_audio_process = multiprocessing.Process(target=capture_audio, args=(audio_queue, save_collection_to, stop_event,))
+    capture_audio_process = multiprocessing.Process(target=capture_audio, args=(send_audio_queue, save_collection_to, stop_event,))
     save_video_process = multiprocessing.Process(target=save_frames, args=(save_video_queue, fps, save_collection_to, width, height,stop_event,))
-    send_audio_process = multiprocessing.Process(target=send_audio, args=(audio_queue, audio_sock, save_collection_to, stop_event,)) # also saves audio
+    send_audio_process = multiprocessing.Process(target=send_audio, args=(send_audio_queue, audio_sock, save_collection_to, stop_event,)) # also saves audio
     send_video_process = multiprocessing.Process(target=send_video, args=(send_video_queue, video_sock, stop_event,))
-    receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, save_collection_to, stop_event,))
-    receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, window_name, save_collection_to, fps, width, height, stop_event,))
-
+    receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, received_audio_queue, save_collection_to, stop_event,))
+    receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, received_video_queue, window_name, save_collection_to, fps, width, height, stop_event,))
+    sync_and_display_process = multiprocessing.Process(target=sync_and_display, arg=(received_audio_queue, received_video_queue, stop_event, "testing123"))
+    
     # Start processes
     capture_video_process.start()
     capture_audio_process.start()
@@ -303,6 +339,7 @@ def send_receive_and_save(audio_sock, video_sock, window_name, fps, save_collect
     send_video_process.start()
     receive_audio_process.start()
     receive_video_process.start()
+    sync_and_display_process.start()
 
     print("Press 'e' to stop the program.")
 
@@ -336,3 +373,4 @@ def send_receive_and_save(audio_sock, video_sock, window_name, fps, save_collect
     send_video_process.join()
     receive_audio_process.join()
     receive_video_process.join()
+    sync_and_display_process.join()
