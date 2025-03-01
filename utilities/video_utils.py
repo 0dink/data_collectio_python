@@ -145,7 +145,7 @@ def send_video(video_queue, video_sock, stop_event):
     while not stop_event.is_set():
         try:
             frame = video_queue.get(timeout=0.1)
-            video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 1])[1].tobytes()
+            video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 25])[1].tobytes()
             video_size = len(video_data)
 
             # Send video size and data separately
