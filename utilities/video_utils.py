@@ -17,7 +17,7 @@ CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
 
-def capture_video(video_queue, width, height, save_collection_to, stop_event):
+def capture_video(send_video_queue, save_video_queue, width, height, save_collection_to, stop_event):
     try:  
         print("capture_video started")
         
@@ -30,11 +30,12 @@ def capture_video(video_queue, width, height, save_collection_to, stop_event):
         if cap.get(cv2.CAP_PROP_FRAME_WIDTH) != width or cap.get(cv2.CAP_PROP_FRAME_HEIGHT) != height:
             cap.release()
             raise RuntimeError(f"Error: Unable to set resolution to {width}x{height}, current resolution is {cap.get(cv2.CAP_PROP_FRAME_WIDTH)}x{cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}")
-
+        
         while not stop_event.is_set():
             ret, frame = cap.read()
             if ret:
-                video_queue.put(frame)  # Put the frame in the queue
+                send_video_queue.put(frame)
+                save_video_queue.put(frame)
                 if timestamp_flag:
                     with open(f"{save_collection_to}/ts_video_captured.txt", "w") as file:
                         file.write(str(time.time()))
@@ -77,7 +78,7 @@ def save_frames(video_queue, fps, save_collection_to, width, height, stop_event)
     try:
         print("save_frames started")
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        video_writer = cv2.VideoWriter(f"{save_collection_to}/output.avi", fourcc, fps, (width, height))
+        video_writer = cv2.VideoWriter(f"{save_collection_to}/output.avi", fourcc, 28, (width, height))
         
         while not stop_event.is_set():
             try:
@@ -144,7 +145,7 @@ def send_video(video_queue, video_sock, stop_event):
     while not stop_event.is_set():
         try:
             frame = video_queue.get(timeout=0.1)
-            video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 25])[1].tobytes()
+            video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 1])[1].tobytes()
             video_size = len(video_data)
 
             # Send video size and data separately
@@ -276,15 +277,16 @@ def receive_video(video_sock, window_name, save_collection_to, fps, width, heigh
 
 def send_receive_and_save(audio_sock, video_sock, window_name, fps, save_collection_to, width, height):
     audio_queue = multiprocessing.Queue()
-    video_queue = multiprocessing.Queue()
+    send_video_queue = multiprocessing.Queue()
+    save_video_queue = multiprocessing.Queue()
     stop_event = multiprocessing.Event()
 
     # Create processes
-    capture_video_process = multiprocessing.Process(target=capture_video, args=(video_queue, width, height, save_collection_to, stop_event,))
+    capture_video_process = multiprocessing.Process(target=capture_video, args=(send_video_queue, save_video_queue, width, height, save_collection_to, stop_event,))
     capture_audio_process = multiprocessing.Process(target=capture_audio, args=(audio_queue, save_collection_to, stop_event,))
-    save_video_process = multiprocessing.Process(target=save_frames, args=(video_queue, fps, save_collection_to, width, height,stop_event,))
+    save_video_process = multiprocessing.Process(target=save_frames, args=(save_video_queue, fps, save_collection_to, width, height,stop_event,))
     send_audio_process = multiprocessing.Process(target=send_audio, args=(audio_queue, audio_sock, save_collection_to, stop_event,)) # also saves audio
-    send_video_process = multiprocessing.Process(target=send_video, args=(video_queue, video_sock, stop_event,))
+    send_video_process = multiprocessing.Process(target=send_video, args=(send_video_queue, video_sock, stop_event,))
     receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, save_collection_to, stop_event,))
     receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, window_name, save_collection_to, fps, width, height, stop_event,))
 

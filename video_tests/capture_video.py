@@ -9,28 +9,29 @@ def record_webcam():
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
-    num_frames = 120
+    # num_frames = 120
  
-    print("Capturing {0} frames".format(num_frames))
+    # print("Capturing {0} frames".format(num_frames))
  
-    # Start time
-    start = time.time()
+    # # Start time
+    # start = time.time()
  
-    # Grab a few frames
-    for i in range(0, num_frames) :
-        ret, frame = cap.read()
+    # # Grab a few frames
+    # for i in range(0, num_frames) :
+    #     ret, frame = cap.read()
  
-    # End time
-    end = time.time()
+    # # End time
+    # end = time.time()
  
-    # Time elapsed
-    seconds = end - start
-    print ("Time taken : {0} seconds".format(seconds))
+    # # Time elapsed
+    # seconds = end - start
+    # print ("Time taken : {0} seconds".format(seconds))
  
-    # Calculate frames per second
-    fps  = num_frames / seconds
-    print("Estimated frames per second : {0}".format(fps))
+    # # Calculate frames per second
+    # fps  = num_frames / seconds
+    # print("Estimated frames per second : {0}".format(fps))
 
+    fps = 60
 
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     video_writer = cv2.VideoWriter("./outputs/test.avi", fourcc, fps, (width, height))
