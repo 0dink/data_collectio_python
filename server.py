@@ -53,7 +53,7 @@ def main():
     video_client.sendall(unique_id.to_bytes(4, 'big'))
 
     # Start send/receive processes
-    send_receive_and_save(audio_client, video_client, "Server", config["fps"], save_collection_to, config["width"], config["height"])
+    send_receive_and_save(audio_client, video_client, config["fps"], save_collection_to, config["width"], config["height"])
 
     # Close connections
     video_client.close()

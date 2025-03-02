@@ -41,7 +41,7 @@ def main():
     with open(f"{save_collection_to}/session_id.txt", "w") as f:
         f.write(str(unique_id))
     
-    send_receive_and_save(audio_socket, video_socket, "Client", config["fps"], save_collection_to, config["width"], config["height"],)
+    send_receive_and_save(audio_socket, video_socket, config["fps"], save_collection_to, config["width"], config["height"],)
 
     # Close sockets
     video_socket.close()
