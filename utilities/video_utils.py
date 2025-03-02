@@ -16,7 +16,8 @@ import time
 AUDIO_FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
-CHUNK = 1024
+# CHUNK = 1536
+CHUNK = 2048
 
 def capture_video(send_video_queue, save_video_queue, width, height, save_collection_to, stop_event):
     try:  
@@ -294,36 +295,48 @@ def sync_playback(audio_buffer, video_buffer, stop_event):
     stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
 
     while not stop_event.is_set():
-        if not audio_buffer or not video_buffer:
-            continue  # Wait for both audio and video data
+        if not video_buffer:  
+            continue  # Always wait for video
 
-        # Get sorted lists of timestamps
+        # Get sorted timestamps (latest first)
         audio_timestamps = sorted(audio_buffer.keys())
         video_timestamps = sorted(video_buffer.keys())
 
-        if not audio_timestamps or not video_timestamps:
+        if not video_timestamps:
             continue
 
-        # Find the best match for video frame
-        video_ts = video_timestamps[0]  # Get the oldest video frame
-        closest_audio_ts = min(audio_timestamps, key=lambda t: abs(t - video_ts))  # Find closest audio timestamp
+        # Keep only the most recent 1-2 frames in each buffer to reduce delay
+        while len(video_timestamps) > 2:
+            video_buffer.pop(video_timestamps.pop(0), None)
 
-        # Allow small time drift (e.g., 100ms)
-        if abs(closest_audio_ts - video_ts) > 0.1:
-            continue  # Skip if too far apart
+        while len(audio_timestamps) > 2:
+            audio_buffer.pop(audio_timestamps.pop(0), None)
 
-        # Pop the synchronized audio and video data
-        frame_data = video_buffer.pop(video_ts)
-        audio_data = audio_buffer.pop(closest_audio_ts)
+        # Get the latest video frame
+        video_ts = video_timestamps[0]
+        frame_data = video_buffer.get(video_ts)  # Use `get()` to avoid KeyError
 
-        # Decode and play video
-        nparr = np.frombuffer(frame_data, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        if img is not None:
-            cv2.imshow("Video", img)
+        if frame_data:
+            video_buffer.pop(video_ts, None)  # Remove only if it exists
 
-        # Play audio
-        stream.write(audio_data)
+            # Find the closest audio match
+            if audio_timestamps:
+                closest_audio_ts = min(audio_timestamps, key=lambda t: abs(t - video_ts))
+                if abs(closest_audio_ts - video_ts) <= 0.15:  # 150ms max drift
+                    audio_data = audio_buffer.pop(closest_audio_ts, b"\x00" * CHUNK)
+                else:
+                    audio_data = b"\x00" * CHUNK  # Insert silence if too far apart
+            else:
+                audio_data = b"\x00" * CHUNK  # No audio, insert silence
+
+            # Decode and show video frame
+            nparr = np.frombuffer(frame_data, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if img is not None:
+                cv2.imshow("Video", img)
+
+            # Play audio
+            stream.write(audio_data)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             stop_event.set()
