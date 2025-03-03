@@ -313,7 +313,7 @@ def sync_playback(audio_buffer, video_buffer, stop_event):
 
         # Get the latest video frame
         video_ts = video_timestamps[0]
-        frame_data = video_buffer.get(video_ts)  # Use `get()` to avoid KeyError
+        frame_data = video_buffer.get(video_ts)
 
         if frame_data:
             video_buffer.pop(video_ts, None)  # Remove only if it exists
