@@ -269,7 +269,7 @@ def receive_video(video_sock, video_buffer, save_collection_to, fps, width, heig
                 img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 if img is not None:
                     # cv2.imshow(window_name, img)
-                    video_buffer[timestamp] = video_data 
+                    video_buffer[timestamp] = img 
                     video_writer.write(img)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -327,10 +327,10 @@ def sync_playback(audio_buffer, video_buffer, stop_event):
                 audio_data = b"\x00" * CHUNK  # No audio, insert silence
 
             # Decode and show video frame
-            nparr = np.frombuffer(frame_data, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            if img is not None:
-                cv2.imshow("Video", img)
+            # nparr = np.frombuffer(frame_data, np.uint8)
+            # img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if frame_data is not None:
+                cv2.imshow("Video", frame_data)
 
             # Play audio
             stream.write(audio_data)
