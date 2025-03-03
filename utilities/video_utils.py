@@ -84,7 +84,6 @@ def save_frames(save_video_queue, fps, save_collection_to, width, height, stop_e
         
         while not stop_event.is_set():
             try:
-                # _ = send_video_queue.get(timeout=0.1)
                 frame = save_video_queue.get(timeout=0.1)
                 video_writer.write(frame)
             except queue.Empty:
@@ -150,14 +149,13 @@ def send_video(video_queue, video_sock, stop_event):
     while not stop_event.is_set():
         try:
             
-            while not video_queue.empty():
-                video_queue.get_nowait()  # Discard older frame
+            # while not video_queue.empty():
+            #     video_queue.get_nowait()  # Discard older frame
             
             frame = video_queue.get(timeout=0.1)
             video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 25])[1].tobytes()
             video_size = len(video_data)
             timestamp = time.time()
-
 
             video_sock.sendall(struct.pack("!dI", timestamp, video_size))  # Send size first
             video_sock.sendall(video_data)  # Send video data
@@ -186,11 +184,11 @@ def receive_audio(audio_sock, audio_buffer, save_collection_to, stop_event):
                 continue  # No data, check stop_event again
 
             # Receive audio size first
-            size_data = audio_sock.recv(12)
-            if not size_data:
+            header = audio_sock.recv(12)
+            if not header:
                 break
                         
-            timestamp, audio_size = struct.unpack("!dI", size_data)
+            timestamp, audio_size = struct.unpack("!dI", header)
 
             # Receive audio data
             audio_data = b""
@@ -242,11 +240,11 @@ def receive_video(video_sock, video_buffer, save_collection_to, fps, width, heig
                 continue  # No data, check stop_event again
             
             # Receive video size first
-            size_data = video_sock.recv(12)
-            if not size_data:
+            header = video_sock.recv(12)
+            if not header:
                 break
 
-            timestamp, video_size = struct.unpack("!dI", size_data)
+            timestamp, video_size = struct.unpack("!dI", header)
 
             # Receive video data
             video_data = b""
