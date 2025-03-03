@@ -159,6 +159,7 @@ def send_video(video_queue, video_sock, stop_event):
 
             video_sock.sendall(struct.pack("!dI", timestamp, video_size))  # Send size first
             video_sock.sendall(video_data)  # Send video data
+        
         except queue.Empty:
             continue
         except (socket.timeout, socket.error) as e:
@@ -224,11 +225,9 @@ def receive_audio(audio_sock, audio_buffer, save_collection_to, stop_event):
     audio_sock.close()
     print("receive_audio ended")
 
-def receive_video(video_sock, video_buffer, save_collection_to, fps, width, height, stop_event): 
+def receive_video(video_sock, video_buffer, save_collection_to, stop_event): 
     print("receive_video started")
     
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    video_writer = cv2.VideoWriter(f"{save_collection_to}/received_video.avi", fourcc, fps, (width, height))
     timestamp_flag = True
 
     while not stop_event.is_set():
@@ -265,16 +264,8 @@ def receive_video(video_sock, video_buffer, save_collection_to, fps, width, heig
 
             # Decode and display the frame
             if video_data:
-                # nparr = np.frombuffer(video_data, np.uint8)
-                # img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                # if img is not None:
-                    # cv2.imshow(window_name, img)
-                    # video_buffer[timestamp] = img 
-                    # video_writer.write(img)
                 video_buffer[timestamp] = video_data
 
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
         except (socket.timeout, socket.error) as e:
             print(f"Socket error in receive_video: {e}")
             break  
@@ -282,8 +273,6 @@ def receive_video(video_sock, video_buffer, save_collection_to, fps, width, heig
             print(f"Error receiving video: {e}")
             break
 
-    video_writer.release()
-    cv2.destroyAllWindows()
     video_sock.close()
     print("receive_video ended")
 
@@ -312,10 +301,8 @@ def sync_playback(audio_buffer, video_buffer, stop_event):
 
         # Get the latest video frame
         video_ts = video_timestamps[0]
-        # img = video_buffer.get(video_ts)
         frame_data = video_buffer.get(video_ts)
 
-        #if img is not None:
         if frame_data: 
             video_buffer.pop(video_ts, None)  # Remove only if it exists
 
@@ -361,11 +348,11 @@ def send_receive_and_save(audio_sock, video_sock, fps, save_collection_to, width
     # Create processes
     capture_video_process = multiprocessing.Process(target=capture_video, args=(send_video_queue, save_video_queue, width, height, save_collection_to, stop_event,))
     capture_audio_process = multiprocessing.Process(target=capture_audio, args=(audio_queue, save_collection_to, stop_event,))
-    save_video_process = multiprocessing.Process(target=save_frames, args=(save_video_queue, fps, save_collection_to, width, height,stop_event,))
+    save_video_process = multiprocessing.Process(target=save_frames, args=(save_video_queue, fps, save_collection_to, width, height, stop_event,))
     send_audio_process = multiprocessing.Process(target=send_audio, args=(audio_queue, audio_sock, save_collection_to, stop_event,)) # also saves audio
     send_video_process = multiprocessing.Process(target=send_video, args=(send_video_queue, video_sock, stop_event,))
     receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, audio_buffer, save_collection_to, stop_event,))
-    receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, video_buffer, save_collection_to, fps, width, height, stop_event,))
+    receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, video_buffer, save_collection_to, stop_event,))
     sync_process = multiprocessing.Process(target=sync_playback, args=(audio_buffer, video_buffer, stop_event))
     
     # Start processes
