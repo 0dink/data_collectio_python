@@ -311,9 +311,9 @@ def sync_playback(audio_buffer, video_buffer, stop_event):
 
         # Get the latest video frame
         video_ts = video_timestamps[0]
-        frame_data = video_buffer.get(video_ts)
+        img = video_buffer.get(video_ts)
 
-        if frame_data:
+        if img is not None:
             video_buffer.pop(video_ts, None)  # Remove only if it exists
 
             # Find the closest audio match
@@ -329,8 +329,8 @@ def sync_playback(audio_buffer, video_buffer, stop_event):
             # Decode and show video frame
             # nparr = np.frombuffer(frame_data, np.uint8)
             # img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            if frame_data is not None:
-                cv2.imshow("Video", frame_data)
+
+            cv2.imshow("Video", img)
 
             # Play audio
             stream.write(audio_data)
