@@ -237,7 +237,7 @@ def display_dot_and_record(display_resolution, capture_resolution, mode, directo
 
         # Render the countdown number
         countdown_text = font.render(str(countdown), True, (0, 0, 0))  # Black color
-        text_rect = countdown_text.get_rect(center=(1920 // 2, 1080 // 2))  # Center the text
+        text_rect = countdown_text.get_rect(center=(width // 2, height // 2))  # Center the text
         screen.blit(countdown_text, text_rect)
         pygame.display.flip()# Update the display
 

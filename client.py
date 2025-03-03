@@ -1,4 +1,7 @@
 import socket
+
+from screeninfo import get_monitors
+
 from utilities.video_utils import send_receive_and_save
 from utilities.io_utils import create_collection_folder, read_config
 from utilities.calibration_utils import display_dot_and_record
@@ -16,7 +19,16 @@ def main():
     save_collection_to = create_collection_folder(config["output_directory"])
     
     capture_resolution = (config["width"], config["height"])
-    display_resolution = (1920, 1080) # make this dynamic 
+        
+    for monitor in get_monitors():
+        if monitor.is_primary:
+            display_resolution = (monitor.width, monitor.height)
+            monitor_dimensions = (monitor.width_mm, monitor.height_mm)
+
+    with open(f"{save_collection_to}/general_info.txt", "w") as file:
+        file.write(f"display resolution: {display_resolution}")
+        file.write(f"monitor dimensions: {monitor_dimensions}")
+
     fps = display_dot_and_record(display_resolution, capture_resolution, config["calibration"], save_collection_to, path_step=5)
     
     ####################
