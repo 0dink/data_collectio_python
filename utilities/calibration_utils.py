@@ -5,6 +5,31 @@ import cv2
 import pickle
 import pygame
 import sys
+import time
+
+def estimate_fps(cap):
+    num_frames = 120
+    print("Estimating camera fps please wait")
+    print("Capturing {0} frames".format(num_frames))
+
+    # Start time
+    start = time.time()
+
+    # Grab a few frames
+    for _ in range(0, num_frames) :
+        _, _ = cap.read()
+
+    # End time
+    end = time.time()
+
+    # Time elapsed
+    seconds = end - start
+    print ("Time taken : {0} seconds".format(seconds))
+
+    # Calculate frames per second
+    fps  = num_frames / seconds
+    print("Estimated frames per second : {0}".format(fps))
+    return fps
 
 def generate_path_segment(path, direction, distance):
     x_end, y_end = path[-1]    
@@ -29,17 +54,17 @@ def generate_path(start, instructions):
     
     return(path)
 
-def display_dot_and_record(display_resolution, capture_resolution, mode, fps, directory, path_step=5):
+def display_dot_and_record(display_resolution, capture_resolution, mode, directory, path_step=5):
     """
     Valid calibration modes are: "snake", "center_box", "face", "no_marker", "quincunx", 
     "7x7_grid", "5x5_grid", "calibration_fancy", "calibration_quincunx" 
     """
     draw_marker = True
-
+    
     pygame.init()
     
-    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW) # may need to change backend 
-
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    
     if not cap.isOpened():
         print("Error: Could not open webcam.")
         exit()
@@ -55,6 +80,9 @@ def display_dot_and_record(display_resolution, capture_resolution, mode, fps, di
     save_as = f"{directory}/calibration_video.avi"
     
     cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+    
+    fps = estimate_fps(cap)
+
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter(save_as, fourcc, fps, (capture_resolution[0], capture_resolution[1]))
 
@@ -261,7 +289,7 @@ def display_dot_and_record(display_resolution, capture_resolution, mode, fps, di
                     out.release()
                 cap.release()
                 pygame.quit()
-                return 
+                return fps
             
             pygame.time.delay(0) # controls the speed of the movement
     else: # This acts as a debug option to just record a video
@@ -297,4 +325,4 @@ def display_dot_and_record(display_resolution, capture_resolution, mode, fps, di
                 cap.release()
                 out.release()
                 pygame.quit()
-                return
+                return fps

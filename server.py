@@ -17,7 +17,7 @@ def main():
 
     capture_resolution = (config["width"], config["height"])
     display_resolution = (1920, 1080) # make this dynamic 
-    display_dot_and_record(display_resolution, capture_resolution, config["calibration"], config["fps"], save_collection_to, path_step=5)
+    fps = display_dot_and_record(display_resolution, capture_resolution, config["calibration"], save_collection_to, path_step=5)
 
     ####################
     # connection stuff #
@@ -53,7 +53,7 @@ def main():
     video_client.sendall(unique_id.to_bytes(4, 'big'))
 
     # Start send/receive processes
-    send_receive_and_save(audio_client, video_client, config["fps"], save_collection_to, config["width"], config["height"])
+    send_receive_and_save(audio_client, video_client, fps, save_collection_to, config["width"], config["height"])
 
     # Close connections
     video_client.close()

@@ -17,7 +17,7 @@ def main():
     
     capture_resolution = (config["width"], config["height"])
     display_resolution = (1920, 1080) # make this dynamic 
-    display_dot_and_record(display_resolution, capture_resolution, config["calibration"], config["fps"], save_collection_to, path_step=5)
+    fps = display_dot_and_record(display_resolution, capture_resolution, config["calibration"], save_collection_to, path_step=5)
     
     ####################
     # connection stuff #
@@ -41,7 +41,7 @@ def main():
     with open(f"{save_collection_to}/session_id.txt", "w") as f:
         f.write(str(unique_id))
     
-    send_receive_and_save(audio_socket, video_socket, config["fps"], save_collection_to, config["width"], config["height"],)
+    send_receive_and_save(audio_socket, video_socket, fps, save_collection_to, config["width"], config["height"],)
 
     # Close sockets
     video_socket.close()
