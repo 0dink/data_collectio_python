@@ -265,12 +265,13 @@ def receive_video(video_sock, video_buffer, save_collection_to, fps, width, heig
 
             # Decode and display the frame
             if video_data:
-                nparr = np.frombuffer(video_data, np.uint8)
-                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                if img is not None:
+                # nparr = np.frombuffer(video_data, np.uint8)
+                # img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                # if img is not None:
                     # cv2.imshow(window_name, img)
-                    video_buffer[timestamp] = img 
-                    video_writer.write(img)
+                    # video_buffer[timestamp] = img 
+                    # video_writer.write(img)
+                video_buffer[timestamp] = video_data
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -311,9 +312,11 @@ def sync_playback(audio_buffer, video_buffer, stop_event):
 
         # Get the latest video frame
         video_ts = video_timestamps[0]
-        img = video_buffer.get(video_ts)
+        # img = video_buffer.get(video_ts)
+        frame_data = video_buffer.get(video_ts)
 
-        if img is not None:
+        #if img is not None:
+        if frame_data: 
             video_buffer.pop(video_ts, None)  # Remove only if it exists
 
             # Find the closest audio match
@@ -327,10 +330,10 @@ def sync_playback(audio_buffer, video_buffer, stop_event):
                 audio_data = b"\x00" * CHUNK  # No audio, insert silence
 
             # Decode and show video frame
-            # nparr = np.frombuffer(frame_data, np.uint8)
-            # img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-            cv2.imshow("Video", img)
+            nparr = np.frombuffer(frame_data, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if img is not None:
+                cv2.imshow("Video", img)
 
             # Play audio
             stream.write(audio_data)
