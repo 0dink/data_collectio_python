@@ -46,6 +46,7 @@ def display_dot_and_record(display_resolution, capture_resolution, mode, fps, di
 
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, capture_resolution[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, capture_resolution[1])
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
 
     if cap.get(cv2.CAP_PROP_FRAME_WIDTH) != capture_resolution[0] or cap.get(cv2.CAP_PROP_FRAME_HEIGHT) != capture_resolution[1]:
         cap.release()
