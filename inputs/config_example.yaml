@@ -1,0 +1,4 @@
+output_directory: "your/path/desired/path/here"
+width: 1920
+height: 1080
+calibration: "calibration_quincunx"
