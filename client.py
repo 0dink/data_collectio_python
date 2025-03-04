@@ -29,7 +29,7 @@ def main():
         file.write(f"display resolution: {display_resolution}")
         file.write(f"monitor dimensions: {monitor_dimensions}")
 
-    fps = display_dot_and_record(display_resolution, capture_resolution, config["calibration"], save_collection_to, path_step=5)
+    local_fps = display_dot_and_record(display_resolution, capture_resolution, config["calibration"], save_collection_to, path_step=5)
     
     ####################
     # connection stuff #
@@ -47,13 +47,22 @@ def main():
         print(f"Connection failed: {e}")
         exit(1)
 
-    unique_id = int.from_bytes(video_socket.recv(4), 'big')
-    print(f"Received unique ID: {unique_id}")
+    session_id = int.from_bytes(video_socket.recv(4), 'big')
+    print(f"Received unique ID: {session_id}")
 
-    with open(f"{save_collection_to}/session_id.txt", "w") as f:
-        f.write(str(unique_id))
-    
-    send_receive_and_save(audio_socket, video_socket, fps, save_collection_to, config["width"], config["height"],)
+    remote_fps = int.from_bytes(video_socket.recv(4), 'big')
+    print(f"Received FPS from server: {remote_fps}")
+
+    video_socket.sendall(local_fps.to_bytes(4, 'big'))
+
+    with open(f"{save_collection_to}/general_info.txt", "w") as file:
+        file.write(f"session ID: {session_id}\n")
+        file.write(f"local fps: {local_fps}\n")
+        file.write(f"remote fps: {remote_fps}\n")
+        file.write(f"display resolution: {display_resolution[0]}X{display_resolution[1]}\n")
+        file.write(f"monitor dimensions in mm: {monitor_dimensions[0]}x{monitor_dimensions[1]}") 
+
+    send_receive_and_save(audio_socket, video_socket, local_fps, remote_fps, save_collection_to, config["width"], config["height"],)
 
     # Close sockets
     video_socket.close()

@@ -10,7 +10,7 @@ import time
 def estimate_fps(cap):
     num_frames = 120
     print("Estimating camera fps please wait")
-    print("Capturing {0} frames".format(num_frames))
+    # print("Capturing {0} frames".format(num_frames))
 
     # Start time
     start = time.time()
@@ -24,7 +24,7 @@ def estimate_fps(cap):
 
     # Time elapsed
     seconds = end - start
-    print ("Time taken : {0} seconds".format(seconds))
+    # print ("Time taken : {0} seconds".format(seconds))
 
     # Calculate frames per second
     fps  = num_frames / seconds
