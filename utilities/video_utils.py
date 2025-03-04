@@ -81,7 +81,7 @@ def save_frames(save_video_queue, fps, save_collection_to, width, height, stop_e
     try:
         print("save_frames started")
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        video_writer = cv2.VideoWriter(f"{save_collection_to}/output.avi", fourcc, fps, (width, height))
+        video_writer = cv2.VideoWriter(f"{save_collection_to}/webcam_video.avi", fourcc, fps, (width, height))
         
         while not stop_event.is_set():
             try:
@@ -277,10 +277,14 @@ def receive_video(video_sock, video_buffer, save_collection_to, stop_event):
     video_sock.close()
     print("receive_video ended")
 
-def sync_playback(audio_buffer, video_buffer, stop_event):
+def sync_playback(audio_buffer, video_buffer, save_collection_to, width, height, stop_event):
     print("sync_playback started")
     audio = pyaudio.PyAudio()
     stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
+
+    fps = 20
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    video_writer = cv2.VideoWriter(f"{save_collection_to}/received_video.avi", fourcc, fps, (width, height))
 
     while not stop_event.is_set():
         if not video_buffer:  
@@ -322,6 +326,7 @@ def sync_playback(audio_buffer, video_buffer, stop_event):
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if img is not None:
                 cv2.imshow("Video", img)
+                video_writer.write(img)
 
             # Play audio
             stream.write(audio_data)
@@ -333,6 +338,7 @@ def sync_playback(audio_buffer, video_buffer, stop_event):
     stream.stop_stream()
     stream.close()
     audio.terminate()
+    video_writer.release()
     cv2.destroyAllWindows()
     print("sync_playback ended")
 
@@ -354,7 +360,7 @@ def send_receive_and_save(audio_sock, video_sock, fps, save_collection_to, width
     send_video_process = multiprocessing.Process(target=send_video, args=(send_video_queue, video_sock, stop_event,))
     receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, audio_buffer, save_collection_to, stop_event,))
     receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, video_buffer, save_collection_to, stop_event,))
-    sync_process = multiprocessing.Process(target=sync_playback, args=(audio_buffer, video_buffer, stop_event))
+    sync_process = multiprocessing.Process(target=sync_playback, args=(audio_buffer, video_buffer, save_collection_to, width, height, stop_event,))
     
     # Start processes
     capture_video_process.start()
