@@ -22,7 +22,7 @@ def main():
             display_resolution = (monitor.width, monitor.height)
             monitor_dimensions = (monitor.width_mm, monitor.height_mm)
 
-    local_fps = display_dot_and_record(display_resolution, capture_resolution, config["calibration"], save_collection_to, path_step=5)
+    fps = display_dot_and_record(display_resolution, capture_resolution, config["calibration"], save_collection_to, path_step=5)
 
     ####################
     # connection stuff #
@@ -52,22 +52,15 @@ def main():
 
     print(f"Session ID:{session_id}")
     video_client.sendall(session_id.to_bytes(4, 'big')) 
-    
-
-    video_client.sendall(round(local_fps).to_bytes(4, 'big'))
-    
-    remote_fps = int.from_bytes(video_client.recv(4), 'big')
-    print(f"Received FPS from remote: {remote_fps}")
 
     with open(f"{save_collection_to}/general_info.txt", "w") as file:
         file.write(f"session ID: {session_id}\n")
-        file.write(f"local fps: {local_fps}\n")
-        file.write(f"remote fps: {remote_fps}\n")
+        file.write(f"local fps: {fps}\n")
         file.write(f"display resolution: {display_resolution[0]}X{display_resolution[1]}\n")
         file.write(f"monitor dimensions in mm: {monitor_dimensions[0]}x{monitor_dimensions[1]}") 
 
     # Start send/receive processes
-    send_receive_and_save(audio_client, video_client, local_fps, remote_fps, save_collection_to, config["width"], config["height"])
+    send_receive_and_save(audio_client, video_client, fps, save_collection_to, config["width"], config["height"])
 
     # Close connections
     video_client.close()

@@ -338,7 +338,7 @@ def sync_playback(audio_buffer, video_buffer, save_collection_to, width, height,
     cv2.destroyAllWindows()
     print("sync_playback ended")
 
-def send_receive_and_save(audio_sock, video_sock, fps, recv_fps, save_collection_to, width, height):
+def send_receive_and_save(audio_sock, video_sock, fps, save_collection_to, width, height):
     audio_queue = multiprocessing.Queue()
     send_video_queue = multiprocessing.Queue()
     save_video_queue = multiprocessing.Queue()
@@ -356,7 +356,7 @@ def send_receive_and_save(audio_sock, video_sock, fps, recv_fps, save_collection
     send_video_process = multiprocessing.Process(target=send_video, args=(send_video_queue, video_sock, stop_event,))
     receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, audio_buffer, stop_event,))
     receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, video_buffer, stop_event,))
-    sync_process = multiprocessing.Process(target=sync_playback, args=(audio_buffer, video_buffer, save_collection_to, width, height, recv_fps, stop_event,))
+    sync_process = multiprocessing.Process(target=sync_playback, args=(audio_buffer, video_buffer, save_collection_to, width, height, stop_event,))
     
     # Start processes
     capture_video_process.start()
