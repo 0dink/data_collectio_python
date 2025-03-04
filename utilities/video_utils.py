@@ -264,13 +264,14 @@ def receive_video(video_sock, video_buffer, stop_event):
     video_sock.close()
     print("receive_video ended")
 
-def sync_playback(audio_buffer, video_buffer, save_collection_to, width, height, fps, stop_event):
+def sync_playback(audio_buffer, video_buffer, save_collection_to, width, height, stop_event):
     print("sync_playback started")
     timestamp_flag = True
     
     audio = pyaudio.PyAudio()
     stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
     
+    fps = 20
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     video_writer = cv2.VideoWriter(f"{save_collection_to}/received_video.avi", fourcc, fps, (width, height))
 
