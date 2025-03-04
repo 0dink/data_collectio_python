@@ -54,7 +54,7 @@ def main():
     video_client.sendall(session_id.to_bytes(4, 'big')) 
     
 
-    video_client.sendall(local_fps.to_bytes(4, 'big'))
+    video_client.sendall(round(local_fps).to_bytes(4, 'big'))
     
     remote_fps = int.from_bytes(video_client.recv(4), 'big')
     print(f"Received FPS from remote: {remote_fps}")

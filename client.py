@@ -53,7 +53,7 @@ def main():
     remote_fps = int.from_bytes(video_socket.recv(4), 'big')
     print(f"Received FPS from server: {remote_fps}")
 
-    video_socket.sendall(local_fps.to_bytes(4, 'big'))
+    video_socket.sendall(round(local_fps).to_bytes(4, 'big'))
 
     with open(f"{save_collection_to}/general_info.txt", "w") as file:
         file.write(f"session ID: {session_id}\n")
