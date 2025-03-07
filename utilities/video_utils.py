@@ -224,7 +224,7 @@ def receive_audio(audio_sock, audio_buffer, stop_event):
             if not header:
                 break
                         
-            audio_size = struct.unpack("!dI", header)[0]
+            audio_size = struct.unpack("!I", header)[0]
 
             # Receive audio data
             audio_data = b""
@@ -240,7 +240,7 @@ def receive_audio(audio_sock, audio_buffer, stop_event):
             
             if audio_data:
                 # stream.write(audio_data)
-                audio_buffer[timestamp] = audio_data  
+                audio_buffer.put(audio_data)  
 
         except (socket.timeout, socket.error) as e:
             print(f"Socket error in receive_audio: {e}")
@@ -271,7 +271,7 @@ def receive_video(video_sock, video_buffer, stop_event):
             if not header:
                 break
 
-            video_size = struct.unpack("!dI", header)[0]
+            video_size = struct.unpack("!I", header)[0]
 
             # Receive video data
             video_data = b""
@@ -287,7 +287,7 @@ def receive_video(video_sock, video_buffer, stop_event):
 
             # Decode and display the frame
             if video_data:
-                video_buffer[timestamp] = video_data
+                video_buffer.put(video_data)
 
         except (socket.timeout, socket.error) as e:
             print(f"Socket error in receive_video: {e}")
