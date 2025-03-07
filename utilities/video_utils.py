@@ -11,6 +11,7 @@ import select
 import queue
 import socket
 import time
+import threading
 
 # Audio Setting 
 AUDIO_FORMAT = pyaudio.paInt16
@@ -144,7 +145,7 @@ def send_audio(audio_queue, audio_sock, save_collection_to, stop_event):
             timestamp = time.time()
 
             # Send audio size and data separately
-            audio_sock.sendall(struct.pack("!dI", timestamp, audio_size))  # Send size first
+            audio_sock.sendall(struct.pack("!I", audio_size))  # Send size first
             audio_sock.sendall(audio_data)  # Send audio data
         
         except queue.Empty:
@@ -190,9 +191,9 @@ def send_video(video_queue, video_sock, stop_event):
             frame = video_queue.get(timeout=0.1)
             video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 25])[1].tobytes()
             video_size = len(video_data)
-            timestamp = time.time()
+            # timestamp = time.time()
 
-            video_sock.sendall(struct.pack("!dI", timestamp, video_size))  # Send size first
+            video_sock.sendall(struct.pack("!I", video_size))  # Send size first
             video_sock.sendall(video_data)  # Send video data
         
         except queue.Empty:
@@ -219,7 +220,7 @@ def receive_audio(audio_sock, audio_buffer, stop_event):
                 continue  # No data, check stop_event again
 
             # Receive audio size first
-            header = audio_sock.recv(12)
+            header = audio_sock.recv(4) 
             if not header:
                 break
                         
@@ -266,7 +267,7 @@ def receive_video(video_sock, video_buffer, stop_event):
                 continue  # No data, check stop_event again
             
             # Receive video size first
-            header = video_sock.recv(12)
+            header = video_sock.recv(4)
             if not header:
                 break
 
@@ -366,27 +367,84 @@ def sync_playback(audio_buffer, video_buffer, frame_queue, save_collection_to, w
     cv2.destroyAllWindows()
     print("sync_playback ended")
 
+def play_video(recv_video_queue, stop_event):
+    while not stop_event.is_set():
+        if not recv_video_queue.empty():
+            frame = recv_video_queue.get()
+            if frame is None:
+                break
+            
+            nparr = np.frombuffer(frame, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+            # frame = cv2.resize(frame, (width, height))  # Ensure correct size
+            cv2.imshow("Video Playback", img)
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                stop_event.set()  # Stop if 'q' is pressed
+
+    cv2.destroyAllWindows()
+
+def play_audio(recv_audio_queue, stop_event):
+    """Thread function to play audio using PyAudio."""
+    p = pyaudio.PyAudio()
+    
+    # Assuming 16-bit mono audio at 44100 Hz
+    stream = p.open(format=pyaudio.paInt16,
+                    channels=1,
+                    rate=44100,
+                    output=True)
+
+    while not stop_event.is_set():
+        if not recv_audio_queue.empty():
+            audio_data = recv_audio_queue.get()
+            if audio_data is None:
+                break
+            stream.write(audio_data)
+
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+
+def playback(recv_video_queue, recv_audio_queue, stop_event):
+    """Multiprocess function to handle video and audio playback using threading."""
+    video_thread = threading.Thread(target=play_video, args=(recv_video_queue, stop_event))
+    audio_thread = threading.Thread(target=play_audio, args=(recv_audio_queue, stop_event))
+
+    video_thread.start()
+    audio_thread.start()
+
+    video_thread.join()
+    audio_thread.join()
+
 def send_receive_and_save(audio_sock, video_sock, fps, save_collection_to, width, height):
-    audio_queue = multiprocessing.Queue()
+    send_audio_queue = multiprocessing.Queue()
     send_video_queue = multiprocessing.Queue()
     save_video_queue = multiprocessing.Queue()
-    displayed_frame_queue = multiprocessing.Queue()
+    recv_video_queue = multiprocessing.Queue()
+    recv_audio_queue = multiprocessing.Queue()
+    
+    # displayed_frame_queue = multiprocessing.Queue()
     stop_event = multiprocessing.Event()
 
-    manager = Manager()
-    audio_buffer = manager.dict()
-    video_buffer = manager.dict()
+    # manager = Manager()
+    # audio_buffer = manager.dict()
+    # video_buffer = manager.dict()
 
     # Create processes
     capture_video_process = multiprocessing.Process(target=capture_video, args=(send_video_queue, save_video_queue, width, height, save_collection_to, stop_event,))
-    capture_audio_process = multiprocessing.Process(target=capture_audio, args=(audio_queue, save_collection_to, stop_event,))
+    capture_audio_process = multiprocessing.Process(target=capture_audio, args=(send_audio_queue, save_collection_to, stop_event,))
     save_video_process = multiprocessing.Process(target=save_frames, args=(save_video_queue, fps, save_collection_to, width, height, stop_event,))
-    send_audio_process = multiprocessing.Process(target=send_audio, args=(audio_queue, audio_sock, save_collection_to, stop_event,)) # also saves audio
+    send_audio_process = multiprocessing.Process(target=send_audio, args=(send_audio_queue, audio_sock, save_collection_to, stop_event,)) # also saves audio
     send_video_process = multiprocessing.Process(target=send_video, args=(send_video_queue, video_sock, stop_event,))
-    receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, audio_buffer, stop_event,))
-    receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, video_buffer, stop_event,))
-    sync_process = multiprocessing.Process(target=sync_playback, args=(audio_buffer, video_buffer, displayed_frame_queue, save_collection_to, width, height, stop_event,))
-    save_received_video_process = multiprocessing.Process(target=save_received_video, args=(displayed_frame_queue, save_collection_to, width, height, stop_event,))
+    receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, recv_video_queue, stop_event,))
+    receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, recv_audio_queue, stop_event,))
+    playback_process = multiprocessing.Process(target=playback, args=(recv_video_queue, recv_audio_queue, width, height, stop_event,))
+
+    # receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, audio_buffer, stop_event,))
+    # receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, video_buffer, stop_event,))
+    # sync_process = multiprocessing.Process(target=sync_playback, args=(audio_buffer, video_buffer, displayed_frame_queue, save_collection_to, width, height, stop_event,))
+    # save_received_video_process = multiprocessing.Process(target=save_received_video, args=(displayed_frame_queue, save_collection_to, width, height, stop_event,))
 
     # Start processes
     capture_video_process.start()
@@ -396,8 +454,9 @@ def send_receive_and_save(audio_sock, video_sock, fps, save_collection_to, width
     send_video_process.start()
     receive_audio_process.start()
     receive_video_process.start()
-    sync_process.start()
-    save_received_video_process.start()
+    playback_process.start()
+    # sync_process.start()
+    # save_received_video_process.start()
 
     print("==============================")
     print("Press 'e' to stop the program.")
@@ -432,7 +491,8 @@ def send_receive_and_save(audio_sock, video_sock, fps, save_collection_to, width
     send_video_process.join()
     receive_audio_process.join()
     receive_video_process.join()
-    sync_process.join()
-    save_received_video_process.join()
+    playback_process.join()
+    # sync_process.join()
+    # save_received_video_process.join()
 
     return
