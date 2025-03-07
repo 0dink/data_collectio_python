@@ -339,7 +339,7 @@ def video_playback(video_buffer, stop_event):
         try:
             if video_buffer.empty():
                 continue
-
+            print(video_buffer.qsize())
             frame = video_buffer.get(timeout=0.1)
             if frame:
                 nparr = np.frombuffer(frame, np.uint8)
