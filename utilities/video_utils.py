@@ -326,9 +326,7 @@ def audio_playback(audio_buffer, stop_event):
 
             audio_data = audio_buffer.get(timeout=0.1)
             stream.write(audio_data)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        
+
         except Exception as e:
             print(f"audio_playback error: {e}")
 
@@ -348,7 +346,9 @@ def video_playback(video_buffer, stop_event):
                 img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 if img is not None:
                     cv2.imshow("video", img)
-
+            
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
         except Exception as e:
             print(f"video_playback error: {e}")
     cv2.destroyAllWindows()
