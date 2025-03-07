@@ -258,8 +258,6 @@ def receive_audio(audio_sock, save_collection_to, stop_event):
 def receive_video(video_sock, window_name, save_collection_to, fps, width, height, stop_event): 
     print("receive_video started")
     
-    # fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    # video_writer = cv2.VideoWriter(f"{save_collection_to}/received_video.avi", fourcc, fps, (width, height))
     timestamp_flag = True
 
     while not stop_event.is_set():
@@ -300,7 +298,6 @@ def receive_video(video_sock, window_name, save_collection_to, fps, width, heigh
                 img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 if img is not None:
                     cv2.imshow(window_name, img)
-                    # video_writer.write(img)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -311,7 +308,6 @@ def receive_video(video_sock, window_name, save_collection_to, fps, width, heigh
             print(f"Error receiving video: {e}")
             break
 
-    video_writer.release()
     cv2.destroyAllWindows()
     video_sock.close()
     print("receive_video ended")
@@ -332,7 +328,7 @@ def send_receive_and_save(audio_sock, video_sock, fps, save_collection_to, width
     send_audio_process = multiprocessing.Process(target=send_audio, args=(send_audio_queue, audio_sock, save_collection_to, stop_event,)) # also saves audio
     send_video_process = multiprocessing.Process(target=send_video, args=(send_video_queue, video_sock, stop_event,))
     receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, save_collection_to, stop_event))
-    receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, "video", fps, width, height, stop_event,))
+    receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, "video", save_collection_to, fps, width, height, stop_event,))
     # receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, recv_video_queue, stop_event,))
     # receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, recv_audio_queue, stop_event,))
 
