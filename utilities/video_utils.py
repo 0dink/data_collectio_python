@@ -321,6 +321,9 @@ def audio_playback(audio_buffer, stop_event):
     
     while not stop_event.is_set():
         try:
+            if audio_buffer.is_empty():
+                continue
+
             audio_data = audio_buffer.get(timeout=0.1)
             stream.write(audio_data)
 
@@ -334,6 +337,9 @@ def audio_playback(audio_buffer, stop_event):
 def video_playback(video_buffer, stop_event):
     while not stop_event.is_set():
         try:
+            if video_buffer.empty():
+                continue
+
             frame = video_buffer.get(timeout=0.1)
             if frame:
                 nparr = np.frombuffer(frame, np.uint8)
@@ -412,5 +418,5 @@ def send_receive_and_save(audio_sock, video_sock, fps, save_collection_to, width
     receive_video_process.join()
     audio_playback_process.join()
     video_playback_process.join()
-    
+
     return
