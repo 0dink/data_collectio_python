@@ -224,7 +224,7 @@ def receive_audio(audio_sock, audio_buffer, stop_event):
             if not header:
                 break
                         
-            timestamp, audio_size = struct.unpack("!dI", header)
+            audio_size = struct.unpack("!dI", header)[0]
 
             # Receive audio data
             audio_data = b""
@@ -271,7 +271,7 @@ def receive_video(video_sock, video_buffer, stop_event):
             if not header:
                 break
 
-            timestamp, video_size = struct.unpack("!dI", header)
+            video_size = struct.unpack("!dI", header)[0]
 
             # Receive video data
             video_data = b""
@@ -439,7 +439,7 @@ def send_receive_and_save(audio_sock, video_sock, fps, save_collection_to, width
     send_video_process = multiprocessing.Process(target=send_video, args=(send_video_queue, video_sock, stop_event,))
     receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, recv_video_queue, stop_event,))
     receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, recv_audio_queue, stop_event,))
-    playback_process = multiprocessing.Process(target=playback, args=(recv_video_queue, recv_audio_queue, width, height, stop_event,))
+    playback_process = multiprocessing.Process(target=playback, args=(recv_video_queue, recv_audio_queue, stop_event,))
 
     # receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, audio_buffer, stop_event,))
     # receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, video_buffer, stop_event,))
