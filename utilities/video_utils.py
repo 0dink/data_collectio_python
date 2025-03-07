@@ -188,7 +188,8 @@ def send_video(video_queue, video_sock, stop_event):
             #     video_queue.get_nowait()  # Discard older frame
             
             frame = video_queue.get(timeout=0.1)
-            video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 25])[1].tobytes()
+            frame_resized = cv2.resize(frame, (1280, 720))  # Resize to 720p
+            video_data = cv2.imencode('.jpg', frame_resized, [cv2.IMWRITE_JPEG_QUALITY, 25])[1].tobytes()
             video_size = len(video_data)
             timestamp = time.time()
 
@@ -344,6 +345,7 @@ def sync_playback(audio_buffer, video_buffer, frame_queue, save_collection_to, w
             nparr = np.frombuffer(frame_data, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if img is not None:
+                cv2.namedWindow("Video", cv2.WINDOW_NORMAL)
                 cv2.imshow("Video", img)
                 # frame_queue.put((img, time.time()))
 
