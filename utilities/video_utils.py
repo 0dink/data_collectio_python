@@ -302,8 +302,8 @@ def receive_video(video_sock, video_buffer, save_collection_to, stop_event):
                     # cv2.imshow("video", img)
                 video_buffer.put(video_data)
 
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     break
         except (socket.timeout, socket.error) as e:
             print(f"Socket error in receive_video: {e}")
             break  
@@ -321,12 +321,14 @@ def audio_playback(audio_buffer, stop_event):
     
     while not stop_event.is_set():
         try:
-            if audio_buffer.is_empty():
+            if audio_buffer.empty():
                 continue
 
             audio_data = audio_buffer.get(timeout=0.1)
             stream.write(audio_data)
-
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+        
         except Exception as e:
             print(f"audio_playback error: {e}")
 
