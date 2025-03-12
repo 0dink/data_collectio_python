@@ -188,7 +188,8 @@ def send_video(video_queue, video_sock, stop_event):
             #     video_queue.get_nowait()  # Discard older frame
             
             frame = video_queue.get(timeout=0.1)
-            video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 25])[1].tobytes()
+            frame_resized = cv2.resize(frame, (1280, 720))  # Resize to 720p
+            video_data = cv2.imencode('.jpg', frame_resized, [cv2.IMWRITE_JPEG_QUALITY, 25])[1].tobytes()
             video_size = len(video_data)
             timestamp = time.time()
 
@@ -344,8 +345,9 @@ def sync_playback(audio_buffer, video_buffer, frame_queue, save_collection_to, w
             nparr = np.frombuffer(frame_data, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if img is not None:
+                cv2.namedWindow("Video", cv2.WINDOW_NORMAL)
                 cv2.imshow("Video", img)
-                frame_queue.put((img, time.time()))
+                # frame_queue.put((img, time.time()))
 
             # Play audio
             stream.write(audio_data)
@@ -386,7 +388,7 @@ def send_receive_and_save(audio_sock, video_sock, fps, save_collection_to, width
     receive_audio_process = multiprocessing.Process(target=receive_audio, args=(audio_sock, audio_buffer, stop_event,))
     receive_video_process = multiprocessing.Process(target=receive_video, args=(video_sock, video_buffer, stop_event,))
     sync_process = multiprocessing.Process(target=sync_playback, args=(audio_buffer, video_buffer, displayed_frame_queue, save_collection_to, width, height, stop_event,))
-    save_received_video_process = multiprocessing.Process(target=save_received_video, args=(displayed_frame_queue, save_collection_to, width, height, stop_event,))
+    # save_received_video_process = multiprocessing.Process(target=save_received_video, args=(displayed_frame_queue, save_collection_to, width, height, stop_event,))
 
     # Start processes
     capture_video_process.start()
@@ -397,7 +399,7 @@ def send_receive_and_save(audio_sock, video_sock, fps, save_collection_to, width
     receive_audio_process.start()
     receive_video_process.start()
     sync_process.start()
-    save_received_video_process.start()
+    # save_received_video_process.start()
 
     print("==============================")
     print("Press 'e' to stop the program.")
@@ -433,6 +435,6 @@ def send_receive_and_save(audio_sock, video_sock, fps, save_collection_to, width
     receive_audio_process.join()
     receive_video_process.join()
     sync_process.join()
-    save_received_video_process.join()
+    # save_received_video_process.join()
 
     return
