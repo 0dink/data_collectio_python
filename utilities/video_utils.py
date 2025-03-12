@@ -11,6 +11,7 @@ import select
 import queue
 import socket
 import time
+import csv
 
 # Audio Setting 
 AUDIO_FORMAT = pyaudio.paInt16
@@ -236,7 +237,7 @@ def receive_video(video_sock, video_buffer, stop_event):
                 continue  # No data, check stop_event again
             
             # Receive video size first
-            header = video_sock.recv(12)
+            header = video_sock.recv(16)
             if not header:
                 break
 
@@ -271,7 +272,8 @@ def receive_video(video_sock, video_buffer, stop_event):
 def sync_playback(audio_buffer, video_buffer, save_collection_to, stop_event):
     print("sync_playback started")
     timestamp_flag = True
-    
+    displayed_frame_indices = []
+
     audio = pyaudio.PyAudio()
     stream = audio.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK)
     
@@ -316,7 +318,7 @@ def sync_playback(audio_buffer, video_buffer, save_collection_to, stop_event):
             if img is not None:
                 cv2.namedWindow("Video", cv2.WINDOW_NORMAL)
                 cv2.imshow("Video", img)
-                print(frame_index)
+                displayed_frame_indices.append(frame_index)
 
             # Play audio
             stream.write(audio_data)
@@ -329,6 +331,10 @@ def sync_playback(audio_buffer, video_buffer, save_collection_to, stop_event):
         if cv2.waitKey(1) & 0xFF == ord('q'):
             stop_event.set()
             break
+    
+    with open(f"{save_collection_to}/indices_of_displayed_frames.csv", "w", newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(displayed_frame_indices)
 
     stream.stop_stream()
     stream.close()
