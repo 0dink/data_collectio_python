@@ -33,6 +33,7 @@ unless otherwise noted this guide needs to followed identically for each of the 
 3) Create a file called `config.yaml` and put it in the `\inputs` folder
    * For data collection the `width` should be `1920` and the `height` should be `1080` 
    * For data collection `calibration` should be set to `calibration_quincunx`
+     * NOTE: For testing you can set `calibration` to `no_marker` this will greatly shorten the calibration step
    * In the `\inputs` folder an example called `config_example.yaml`
 4) Download this [LogiTune](https://www.logitech.com/en-us/video-collaboration/software/logi-tune-software.html) this will be used to turn off auto focus. IMPORTANT: The software is finicky and will sometimes turn autofocus back on. Before starting each collection make sure it is still off. If autofocus is on the data collected will be unusable.
    * Download and open software
