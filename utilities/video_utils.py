@@ -33,11 +33,13 @@ def capture_video(send_video_queue, save_video_queue, width, height, save_collec
             cap.release()
             raise RuntimeError(f"Error: Unable to set resolution to {width}x{height}, current resolution is {cap.get(cv2.CAP_PROP_FRAME_WIDTH)}x{cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}")
         
+        frame_index = 0
         while not stop_event.is_set():
             ret, frame = cap.read()
             if ret:
+                frame_index += 1
                 save_video_queue.put(frame)
-                send_video_queue.put(frame)
+                send_video_queue.put((frame, frame_index))
                     
                 if timestamp_flag:
                     with open(f"{save_collection_to}/ts_video_captured.txt", "w") as file:
@@ -153,14 +155,14 @@ def send_video(video_queue, video_sock, resize, stop_event):
             # while not video_queue.empty():
             #     video_queue.get_nowait()  # Discard older frame
             
-            frame = video_queue.get(timeout=0.1)
+            frame, frame_index = video_queue.get(timeout=0.1)
             if resize:
                 frame = cv2.resize(frame, (1280, 720))  # Resize to 720p
             video_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 25])[1].tobytes()
             video_size = len(video_data)
             timestamp = time.time()
 
-            video_sock.sendall(struct.pack("!dI", timestamp, video_size))  # Send size first
+            video_sock.sendall(struct.pack("!dII", timestamp, frame_index, video_size))  # Send size first
             video_sock.sendall(video_data)  # Send video data
         
         except queue.Empty:
@@ -238,7 +240,7 @@ def receive_video(video_sock, video_buffer, stop_event):
             if not header:
                 break
 
-            timestamp, video_size = struct.unpack("!dI", header)
+            timestamp, frame_index, video_size = struct.unpack("!dII", header)
 
             # Receive video data
             video_data = b""
@@ -254,7 +256,7 @@ def receive_video(video_sock, video_buffer, stop_event):
 
             # Decode and display the frame
             if video_data:
-                video_buffer[timestamp] = video_data
+                video_buffer[timestamp] = (video_data, frame_index)
 
         except (socket.timeout, socket.error) as e:
             print(f"Socket error in receive_video: {e}")
@@ -293,7 +295,7 @@ def sync_playback(audio_buffer, video_buffer, save_collection_to, stop_event):
 
         # Get the latest video frame
         video_ts = video_timestamps[0]
-        frame_data = video_buffer.get(video_ts)
+        frame_data, frame_index = video_buffer.get(video_ts)
 
         if frame_data: 
             video_buffer.pop(video_ts, None)  # Remove only if it exists
@@ -314,6 +316,7 @@ def sync_playback(audio_buffer, video_buffer, save_collection_to, stop_event):
             if img is not None:
                 cv2.namedWindow("Video", cv2.WINDOW_NORMAL)
                 cv2.imshow("Video", img)
+                print(frame_index)
 
             # Play audio
             stream.write(audio_data)
