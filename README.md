@@ -16,13 +16,16 @@ unless otherwise noted this guide needs to followed identically for each of the 
 * Each subject in different room
 * Stable internet connection
 
-### Step 3: Test Subject 
+### Step 3: Test Subject
+* If subject is wearing glasses ensure that the glare on then is minimal if there is a large amount of glare adjust rooms lighting to remedy this.
 * Should not move around too much, some movement is fine but they should avoid large movements.
 * Try to remain approximately 2 to 2.5 feet away from the screen.
 * The subject eye level should be approximately at the center of screen.
 * Head positioned in center of screen, i.e., not off to the left or right.
 * Entire face needs to be visible to the subject on the other end.
+* Should look at the screen for the duration of the collection.
 * Seated at desk
+
 
 ### Step 4: Program Set Up
 1) create python environment from included `environment.yaml` (this is most easily done with [ANACONDA](https://www.anaconda.com/))
@@ -40,12 +43,26 @@ unless otherwise noted this guide needs to followed identically for each of the 
    * Select Brio 500
    * Select Image adjustments 
    * Turn off autofocus
+5) If client and server wont connect to each other.
+   * Try `ping "ip of desired machine"` if it times out but is otherwise connected to internet try turning off the firewall on both machines. 
 
 ### Step 5: Data Collection
-* The discussion/prompt can realistically be anything that both parties agree. Here are some suggestions,
-  1) Favorite movie or tv show and why
-  2) Most recent vacation
-* Data collection should last for 10 to 15 minutes or however long it can go without there being nothing left to talk about.
+* Subjects should be briefly introduced to one another before collection starts 
+* Subjects should decide on the topic of discussion before collection starts
+* Ask subjects if they have anything in particular they would like to discuss, if not here are some suggestions. Also Here is a [list](https://www.mtu.edu/student-leadership/student-orgs/rso-resources/virtual-resources/fun-icebreaking-questions.pdf) of Ice breakers that may work if you do not like any of my suggestions.
+  1) Favorite movie or TV show and why. 
+  2) Most recent vacation.
+  3) Best or worst travel experiences.
+  4) What would you do if you won the lottery.
+  5) If you could have a super power.
+  6) If you had to teach a class on one thing, what would you teach.
+  7) Who is your favorite musical artist and what do you like about their music.
+  8) What book are you reading right now and what is it about. (can be substituted with tv show)
+  9) Favorite sport or sports team and what you like about it.
+  10) What is your favorite or least favorite local place to eat.
+* Make note of the topic of conversation. 
+* The conversations should last for 5 minutes at a minimum and end once a natural stopping point is reached.
+* The conversations should be limited to 10 minutes but this is not a hard limit.  
 * During the calibration step both user need to follow the red dot on screen.
 
 # How to Use and Expected Behavior
