@@ -48,7 +48,7 @@ unless otherwise noted this guide needs to followed identically for each of the 
 
 ### Step 5: Data Collection
 * Subjects should be briefly introduced to one another before collection starts 
-* Subjects should decide on the topic of discussion before collection starts
+* Subjects should agree on a few topics for discussion 5 to 7.
 * Ask subjects if they have anything in particular they would like to discuss, if not here are some suggestions. Also Here is a [list](https://www.mtu.edu/student-leadership/student-orgs/rso-resources/virtual-resources/fun-icebreaking-questions.pdf) of Ice breakers that may work if you do not like any of my suggestions.
   1) Favorite movie or TV show and why. 
   2) Most recent vacation.
@@ -61,8 +61,8 @@ unless otherwise noted this guide needs to followed identically for each of the 
   9) Favorite sport or sports team and what you like about it.
   10) What is your favorite or least favorite local place to eat.
 * Make note of the topic of conversation. 
-* The conversations should last for 5 minutes at a minimum and end once a natural stopping point is reached.
-* The conversations should be limited to 10 minutes but this is not a hard limit.  
+* The subjects should converse for a minimum of 10 minutes. If they finish discussing one topic have them move onto another.
+* If the subjects conversation lasts longer than 10 minutes do not stop them at the 10 minute mark allow them to finish their conversation naturally (Stop them if it goes on longer than 20 minutes in total)
 * During the calibration step both user need to follow the red dot on screen.
 
 # How to Use and Expected Behavior
