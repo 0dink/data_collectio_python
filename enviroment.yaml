@@ -1,4 +1,4 @@
-name: data_collection_app
+name: data_collection_app1
 channels:
   - conda-forge
   - defaults
